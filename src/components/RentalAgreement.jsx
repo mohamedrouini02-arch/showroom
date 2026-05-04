@@ -26,6 +26,7 @@ export function printRentalAgreement(rental, car, customer) {
     const totalCost = rental.total_cost || (diffDays * rental.daily_rate);
 
     const mileageOut = rental.mileage_out || car?.mileage || '............';
+    const pickupTime = rental.pickup_time ? rental.pickup_time.slice(0, 5) : '............';
     const carYear = car?.year || rental.cars?.year || '';
     const carMake = car?.make || rental.cars?.make || '';
     const carModel = car?.model || rental.cars?.model || '';
@@ -480,6 +481,10 @@ export function printRentalAgreement(rental, car, customer) {
                 <div class="info-item">
                     <span class="info-label">عدد الأيام:</span>
                     <span class="info-value">${diffDays} يوم</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">ساعة الاستلام:</span>
+                    <span class="info-value">${pickupTime}</span>
                 </div>
                 <div class="info-item">
                     <span class="info-label">عداد الكيلومتر عند الإرجاع:</span>

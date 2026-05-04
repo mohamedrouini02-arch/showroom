@@ -16,7 +16,7 @@ export default function Rentals() {
 
     // Form State
     const [rentData, setRentData] = useState({
-        carId: '', customerId: '', startDate: '', endDate: '', dailyRate: '', mileageOut: ''
+        carId: '', customerId: '', startDate: '', endDate: '', dailyRate: '', mileageOut: '', pickupTime: ''
     });
     const [selectedCar, setSelectedCar] = useState(null);
 
@@ -71,6 +71,7 @@ export default function Rentals() {
                 customer_id: rentData.customerId,
                 start_date: rentData.startDate,
                 end_date: rentData.endDate,
+                pickup_time: rentData.pickupTime || null,
                 daily_rate: Number(rentData.dailyRate),
                 total_cost: totalCost,
                 mileage_out: rentData.mileageOut ? Number(rentData.mileageOut) : null,
@@ -88,7 +89,7 @@ export default function Rentals() {
             if (carError) throw carError;
 
             setIsRentModalOpen(false);
-            setRentData({ carId: '', customerId: '', startDate: '', endDate: '', dailyRate: '', mileageOut: '' });
+            setRentData({ carId: '', customerId: '', startDate: '', endDate: '', dailyRate: '', mileageOut: '', pickupTime: '' });
             setSelectedCar(null);
             fetchRentals();
             fetchDropdownData();
@@ -147,6 +148,7 @@ export default function Rentals() {
                                 <th className="px-6 py-4">Vehicle</th>
                                 <th className="px-6 py-4">Customer</th>
                                 <th className="px-6 py-4">Dates</th>
+                                <th className="px-6 py-4">Pickup</th>
                                 <th className="px-6 py-4 text-right">Total Cost</th>
                                 <th className="px-6 py-4 text-right">Actions</th>
                             </tr>
@@ -166,6 +168,9 @@ export default function Rentals() {
                                     <td className="px-6 py-4 text-sm text-slate-500">
                                         {new Date(r.start_date).toLocaleDateString()} - {new Date(r.end_date).toLocaleDateString()}
                                     </td>
+                                    <td className="px-6 py-4 text-sm text-slate-500">
+                                        {r.pickup_time ? r.pickup_time.slice(0, 5) : '—'}
+                                    </td>
                                     <td className="px-6 py-4 text-right font-medium text-green-600">{formatMoney(r.total_cost)}</td>
                                     <td className="px-6 py-4 text-right">
                                         <div className="flex justify-end gap-2">
@@ -179,7 +184,7 @@ export default function Rentals() {
                             ))}
                             {rentals.length === 0 && (
                                 <tr>
-                                    <td colSpan="6" className="px-6 py-8 text-center text-slate-500">No rental records found.</td>
+                                    <td colSpan="7" className="px-6 py-8 text-center text-slate-500">No rental records found.</td>
                                 </tr>
                             )}
                         </tbody>
@@ -204,9 +209,10 @@ export default function Rentals() {
                             <Input label="End Date" type="date" value={rentData.endDate} onChange={e => setRentData({ ...rentData, endDate: e.target.value })} required />
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-3 gap-4">
                             <Input label="Daily Rate (DA)" type="number" value={rentData.dailyRate} onChange={e => setRentData({ ...rentData, dailyRate: e.target.value })} required />
                             <Input label="Mileage at Pickup (KM)" type="number" value={rentData.mileageOut} onChange={e => setRentData({ ...rentData, mileageOut: e.target.value })} placeholder="Current odometer" />
+                            <Input label="Pickup Time" type="time" value={rentData.pickupTime} onChange={e => setRentData({ ...rentData, pickupTime: e.target.value })} />
                         </div>
 
                         <div className="flex justify-end pt-4">

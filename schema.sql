@@ -33,6 +33,7 @@ CREATE TABLE public.cars (
     status TEXT DEFAULT 'Available'              -- Available, Sold, Rented
         CHECK (status IN ('Available', 'Sold', 'Rented')),
     damages JSONB DEFAULT '[]'::JSONB,           -- Array of {area, description}
+    photos TEXT[] DEFAULT '{}',                  -- Array of Supabase Storage URLs
     created_at TIMESTAMPTZ DEFAULT timezone('utc'::TEXT, now()) NOT NULL
 );
 
@@ -51,6 +52,7 @@ CREATE TABLE public.customers (
     email TEXT,                                  -- Optional email
     address TEXT,                                -- e.g. Jijel Center
     national_id TEXT,                            -- National ID / Driver License number
+    id_photo_url TEXT,                           -- URL to uploaded ID scan photo
     created_at TIMESTAMPTZ DEFAULT timezone('utc'::TEXT, now()) NOT NULL
 );
 
@@ -108,6 +110,7 @@ CREATE TABLE public.rentals (
     customer_id UUID REFERENCES public.customers(id) ON DELETE SET NULL,
     start_date DATE NOT NULL,                    -- Rental start date
     end_date DATE NOT NULL,                      -- Rental end date
+    pickup_time TIME,                            -- Time of vehicle pickup (e.g. 14:30)
     daily_rate NUMERIC NOT NULL,                 -- Price per day (DA)
     total_cost NUMERIC NOT NULL,                 -- Total rental cost (DA)
     mileage_out INTEGER,                         -- Odometer reading at pickup (KM)
@@ -151,6 +154,49 @@ CREATE POLICY "Allow all access on rentals" ON public.rentals
     FOR ALL USING (true) WITH CHECK (true);
 
 -- ============================================================
--- DONE! All tables are ready for the Showroom app.
--- Tables: cars, customers, employees, sales, rentals
+-- 7. SUPABASE STORAGE BUCKETS
+-- Run this AFTER creating buckets in Dashboard → Storage
+-- Bucket names: vehicle-photos, customer-ids (set as PUBLIC)
+-- ============================================================
+
+-- Storage policies for vehicle-photos bucket
+CREATE POLICY "Allow public read vehicle-photos"
+ON storage.objects FOR SELECT
+USING (bucket_id = 'vehicle-photos');
+
+CREATE POLICY "Allow public upload vehicle-photos"
+ON storage.objects FOR INSERT
+WITH CHECK (bucket_id = 'vehicle-photos');
+
+CREATE POLICY "Allow public update vehicle-photos"
+ON storage.objects FOR UPDATE
+USING (bucket_id = 'vehicle-photos');
+
+CREATE POLICY "Allow public delete vehicle-photos"
+ON storage.objects FOR DELETE
+USING (bucket_id = 'vehicle-photos');
+
+-- Storage policies for customer-ids bucket
+CREATE POLICY "Allow public read customer-ids"
+ON storage.objects FOR SELECT
+USING (bucket_id = 'customer-ids');
+
+CREATE POLICY "Allow public upload customer-ids"
+ON storage.objects FOR INSERT
+WITH CHECK (bucket_id = 'customer-ids');
+
+CREATE POLICY "Allow public update customer-ids"
+ON storage.objects FOR UPDATE
+USING (bucket_id = 'customer-ids');
+
+CREATE POLICY "Allow public delete customer-ids"
+ON storage.objects FOR DELETE
+USING (bucket_id = 'customer-ids');
+
+-- ============================================================
+-- DONE! All tables and storage policies are ready.
+-- 
+-- IMPORTANT: After running this SQL, go to Supabase Dashboard:
+--   1. Storage → New Bucket → "vehicle-photos" (Public)
+--   2. Storage → New Bucket → "customer-ids" (Public)
 -- ============================================================

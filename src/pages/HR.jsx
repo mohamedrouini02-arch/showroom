@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { UserPlus, Trash2 } from 'lucide-react';
+import { UserPlus, Trash2, Pencil } from 'lucide-react';
 import Layout from '../components/Layout';
 import { Button, Modal, Input } from '../components/ui';
 import { supabase } from '../lib/supabase';
@@ -7,9 +7,12 @@ import { supabase } from '../lib/supabase';
 export default function HR() {
     const [employees, setEmployees] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [isAddEmployeeOpen, setIsAddEmployeeOpen] = useState(false);
-    const [newEmployee, setNewEmployee] = useState({ name: '', role: 'Sales', email: '', phone: '' });
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [editingEmployee, setEditingEmployee] = useState(null);
     const [stats, setStats] = useState({});
+
+    const initialState = { name: '', role: 'Sales', email: '', phone: '' };
+    const [formData, setFormData] = useState(initialState);
 
     useEffect(() => {
         fetchEmployeesAndStats();
@@ -39,17 +42,43 @@ export default function HR() {
         setLoading(false);
     };
 
-    const handleAddEmployee = async (e) => {
+    const openAddModal = () => {
+        setEditingEmployee(null);
+        setFormData(initialState);
+        setIsModalOpen(true);
+    };
+
+    const openEditModal = (emp) => {
+        setEditingEmployee(emp);
+        setFormData({
+            name: emp.name || '',
+            role: emp.role || 'Sales',
+            email: emp.email || '',
+            phone: emp.phone || ''
+        });
+        setIsModalOpen(true);
+    };
+
+    const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            const { error } = await supabase.from('employees').insert([newEmployee]);
-            if (error) throw error;
-            setIsAddEmployeeOpen(false);
-            setNewEmployee({ name: '', role: 'Sales', email: '', phone: '' });
+            if (editingEmployee) {
+                const { error } = await supabase
+                    .from('employees')
+                    .update(formData)
+                    .eq('id', editingEmployee.id);
+                if (error) throw error;
+            } else {
+                const { error } = await supabase.from('employees').insert([formData]);
+                if (error) throw error;
+            }
+            setIsModalOpen(false);
+            setFormData(initialState);
+            setEditingEmployee(null);
             fetchEmployeesAndStats();
         } catch (error) {
-            console.error('Error adding employee:', error);
-            alert('Failed to add employee.');
+            console.error('Error saving employee:', error);
+            alert('Failed to save employee.');
         }
     };
 
@@ -67,7 +96,7 @@ export default function HR() {
             <div className="space-y-6">
                 <div className="flex justify-between items-center">
                     <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Staff & Commissions</h2>
-                    <Button onClick={() => setIsAddEmployeeOpen(true)} icon={UserPlus}>Add Staff</Button>
+                    <Button onClick={openAddModal} icon={UserPlus}>Add Staff</Button>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -75,7 +104,10 @@ export default function HR() {
                         const empStats = stats[emp.id] || { count: 0, commission: 0 };
                         return (
                             <div key={emp.id} className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 relative">
-                                <button onClick={() => handleDelete(emp.id)} className="absolute top-4 right-4 text-slate-300 hover:text-red-500 transition-colors"><Trash2 size={18} /></button>
+                                <div className="absolute top-4 right-4 flex gap-2">
+                                    <button onClick={() => openEditModal(emp)} className="text-slate-300 hover:text-blue-500 transition-colors"><Pencil size={18} /></button>
+                                    <button onClick={() => handleDelete(emp.id)} className="text-slate-300 hover:text-red-500 transition-colors"><Trash2 size={18} /></button>
+                                </div>
                                 <div className="flex items-center mb-4">
                                     <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold text-lg mr-3 uppercase">{emp.name[0]}</div>
                                     <div>
@@ -83,6 +115,12 @@ export default function HR() {
                                         <p className="text-sm text-slate-500">{emp.role}</p>
                                     </div>
                                 </div>
+                                {(emp.phone || emp.email) && (
+                                    <div className="text-xs text-slate-500 mb-3 space-y-1">
+                                        {emp.phone && <div>📞 {emp.phone}</div>}
+                                        {emp.email && <div>✉️ {emp.email}</div>}
+                                    </div>
+                                )}
                                 <div className="border-t border-slate-100 dark:border-slate-700 pt-4 space-y-2">
                                     <div className="flex justify-between text-sm">
                                         <span className="text-slate-500">Sales Count</span>
@@ -99,15 +137,15 @@ export default function HR() {
                     {employees.length === 0 && <p className="text-slate-500 col-span-full text-center py-10">No staff members found.</p>}
                 </div>
 
-                {/* Add Employee Modal */}
-                <Modal isOpen={isAddEmployeeOpen} onClose={() => setIsAddEmployeeOpen(false)} title="New Staff Member">
-                    <form onSubmit={handleAddEmployee}>
-                        <Input label="Full Name" value={newEmployee.name} onChange={e => setNewEmployee({ ...newEmployee, name: e.target.value })} required />
-                        <Input label="Role" value={newEmployee.role} onChange={e => setNewEmployee({ ...newEmployee, role: e.target.value })} placeholder="Sales, Mechanic, Manager" />
-                        <Input label="Email" type="email" value={newEmployee.email} onChange={e => setNewEmployee({ ...newEmployee, email: e.target.value })} />
-                        <Input label="Phone" type="tel" value={newEmployee.phone} onChange={e => setNewEmployee({ ...newEmployee, phone: e.target.value })} />
+                {/* Add/Edit Employee Modal */}
+                <Modal isOpen={isModalOpen} onClose={() => { setIsModalOpen(false); setEditingEmployee(null); }} title={editingEmployee ? 'Edit Staff Member' : 'New Staff Member'}>
+                    <form onSubmit={handleSubmit}>
+                        <Input label="Full Name" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} required />
+                        <Input label="Role" value={formData.role} onChange={e => setFormData({ ...formData, role: e.target.value })} placeholder="Sales, Mechanic, Manager" />
+                        <Input label="Email" type="email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} />
+                        <Input label="Phone" type="tel" value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} />
                         <div className="flex justify-end pt-4">
-                            <Button type="submit">Save Employee</Button>
+                            <Button type="submit">{editingEmployee ? 'Save Changes' : 'Save Employee'}</Button>
                         </div>
                     </form>
                 </Modal>
