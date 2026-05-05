@@ -10,6 +10,9 @@ export default function Rentals() {
     const [loading, setLoading] = useState(true);
     const [isRentModalOpen, setIsRentModalOpen] = useState(false);
     const [editingRental, setEditingRental] = useState(null);
+    const [isReturnModalOpen, setIsReturnModalOpen] = useState(false);
+    const [rentalToReturn, setRentalToReturn] = useState(null);
+    const [returnMileage, setReturnMileage] = useState('');
 
     // Data for dropdowns
     const [availableCars, setAvailableCars] = useState([]);
@@ -57,7 +60,7 @@ export default function Rentals() {
         if (car) {
             setRentData(prev => ({
                 ...prev,
-                dailyRate: prev.dailyRate || Math.round(car.price / 100),
+                dailyRate: prev.dailyRate || 7000,
                 mileageOut: car.mileage || ''
             }));
         }
@@ -166,11 +169,26 @@ export default function Rentals() {
         }
     };
 
-    const handleReturn = async (rental) => {
-        if (!confirm('Confirm return of vehicle?')) return;
+    const openReturnModal = (rental) => {
+        setRentalToReturn(rental);
+        setReturnMileage(rental.cars?.mileage || '');
+        setIsReturnModalOpen(true);
+    };
+
+    const submitReturn = async (e) => {
+        e.preventDefault();
         try {
-            await supabase.from('rentals').update({ status: 'Returned', returned_at: new Date().toISOString() }).eq('id', rental.id);
-            await supabase.from('cars').update({ status: 'Available' }).eq('id', rental.car_id);
+            await supabase.from('rentals').update({ status: 'Returned', returned_at: new Date().toISOString() }).eq('id', rentalToReturn.id);
+            
+            const updatePayload = { status: 'Available' };
+            if (returnMileage) {
+                updatePayload.mileage = Number(returnMileage);
+            }
+            
+            await supabase.from('cars').update(updatePayload).eq('id', rentalToReturn.car_id);
+            
+            setIsReturnModalOpen(false);
+            setRentalToReturn(null);
             fetchRentals();
             fetchAvailableCars();
         } catch (error) {
@@ -234,7 +252,7 @@ export default function Rentals() {
                                                 <Button size="sm" variant="ghost" onClick={() => openEditModal(r)} icon={Pencil} />
                                                 <Button size="sm" variant="ghost" onClick={() => handlePrintAgreement(r)} icon={FileText} />
                                                 {r.status === 'Active' && (
-                                                    <Button size="sm" variant="outline" onClick={() => handleReturn(r)} icon={CheckCircle}>Return</Button>
+                                                    <Button size="sm" variant="outline" onClick={() => openReturnModal(r)} icon={CheckCircle}>Return</Button>
                                                 )}
                                             </div>
                                         </td>
@@ -348,6 +366,20 @@ export default function Rentals() {
                                 <Button type="submit" size="lg">{editingRental ? 'Save Changes' : 'Create Rental'}</Button>
                             </div>
                         )}
+                    </form>
+                </Modal>
+
+                {/* Return Rental Modal */}
+                <Modal isOpen={isReturnModalOpen} onClose={() => { setIsReturnModalOpen(false); setRentalToReturn(null); }} title="Return Vehicle">
+                    <form onSubmit={submitReturn} className="space-y-4">
+                        <div className="bg-slate-800/30 rounded-xl p-4 border border-slate-700/30">
+                            <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Vehicle</p>
+                            <p className="font-semibold text-white">{rentalToReturn?.cars?.year} {rentalToReturn?.cars?.make} {rentalToReturn?.cars?.model}</p>
+                        </div>
+                        <Input label="New Mileage (KM)" type="number" value={returnMileage} onChange={e => setReturnMileage(e.target.value)} required placeholder="Enter updated odometer reading" />
+                        <div className="flex justify-end pt-2">
+                            <Button type="submit" variant="success">Confirm Return</Button>
+                        </div>
                     </form>
                 </Modal>
             </div>
