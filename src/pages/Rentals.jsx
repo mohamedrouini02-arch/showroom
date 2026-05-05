@@ -16,12 +16,14 @@ export default function Rentals() {
 
     // Data for dropdowns
     const [availableCars, setAvailableCars] = useState([]);
+    const [existingCustomers, setExistingCustomers] = useState([]);
 
     // Form State - car selection
     const [selectedCarId, setSelectedCarId] = useState('');
     const [selectedCar, setSelectedCar] = useState(null);
 
     // Form State - inline customer
+    const [selectedCustomerId, setSelectedCustomerId] = useState('new');
     const [customerData, setCustomerData] = useState({
         name: '', phone: '', address: '', national_id: ''
     });
@@ -34,7 +36,13 @@ export default function Rentals() {
     useEffect(() => {
         fetchRentals();
         fetchAvailableCars();
+        fetchExistingCustomers();
     }, []);
+
+    const fetchExistingCustomers = async () => {
+        const { data } = await supabase.from('customers').select('*').order('name', { ascending: true });
+        setExistingCustomers(data || []);
+    };
 
     const fetchRentals = async () => {
         setLoading(true);
@@ -66,10 +74,29 @@ export default function Rentals() {
         }
     };
 
+    const handleCustomerSelect = (e) => {
+        const val = e.target.value;
+        setSelectedCustomerId(val);
+        if (val && val !== 'new') {
+            const cust = existingCustomers.find(c => c.id === val);
+            if (cust) {
+                setCustomerData({
+                    name: cust.name || '',
+                    phone: cust.phone || '',
+                    address: cust.address || '',
+                    national_id: cust.national_id || ''
+                });
+            }
+        } else {
+            setCustomerData({ name: '', phone: '', address: '', national_id: '' });
+        }
+    };
+
     const openNewRentalModal = () => {
         setEditingRental(null);
         setSelectedCarId('');
         setSelectedCar(null);
+        setSelectedCustomerId('new');
         setCustomerData({ name: '', phone: '', address: '', national_id: '' });
         setRentData({ startDate: '', endDate: '', dailyRate: '', mileageOut: '', pickupTime: '' });
         setIsRentModalOpen(true);
@@ -104,6 +131,8 @@ export default function Rentals() {
             const diffDays = Math.ceil(Math.abs(end - start) / (1000 * 60 * 60 * 24));
             const totalCost = diffDays * Number(rentData.dailyRate);
 
+            let finalCustomerId = null;
+
             if (editingRental) {
                 // Update existing rental
                 // Update customer info
@@ -127,24 +156,36 @@ export default function Rentals() {
 
                 if (error) throw error;
             } else {
-                // Create customer first
-                const { data: newCustomer, error: custError } = await supabase
-                    .from('customers')
-                    .insert([{
+                if (selectedCustomerId && selectedCustomerId !== 'new') {
+                    // Update existing customer info just in case they changed it
+                    await supabase.from('customers').update({
                         name: customerData.name,
                         phone: customerData.phone,
                         address: customerData.address,
                         national_id: customerData.national_id
-                    }])
-                    .select()
-                    .single();
+                    }).eq('id', selectedCustomerId);
+                    finalCustomerId = selectedCustomerId;
+                } else {
+                    // Create customer first
+                    const { data: newCustomer, error: custError } = await supabase
+                        .from('customers')
+                        .insert([{
+                            name: customerData.name,
+                            phone: customerData.phone,
+                            address: customerData.address,
+                            national_id: customerData.national_id
+                        }])
+                        .select()
+                        .single();
 
-                if (custError) throw custError;
+                    if (custError) throw custError;
+                    finalCustomerId = newCustomer.id;
+                }
 
                 // Create rental
                 const { error: rentError } = await supabase.from('rentals').insert([{
                     car_id: selectedCarId,
-                    customer_id: newCustomer.id,
+                    customer_id: finalCustomerId,
                     start_date: rentData.startDate,
                     end_date: rentData.endDate,
                     pickup_time: rentData.pickupTime || null,
@@ -163,6 +204,7 @@ export default function Rentals() {
             setIsRentModalOpen(false);
             fetchRentals();
             fetchAvailableCars();
+            fetchExistingCustomers();
         } catch (error) {
             console.error('Error processing rental:', error);
             alert('Failed to process rental.');
@@ -322,6 +364,21 @@ export default function Rentals() {
                                 <h3 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
                                     <User size={16} className="text-brand-400" /> Customer Info
                                 </h3>
+                                
+                                {!editingRental && (
+                                    <div className="mb-4">
+                                        <Select 
+                                            label="Select Customer" 
+                                            value={selectedCustomerId} 
+                                            onChange={handleCustomerSelect}
+                                            options={[
+                                                { label: '+ Create New Customer', value: 'new' },
+                                                ...existingCustomers.map(c => ({ label: `${c.name} (${c.phone})`, value: c.id }))
+                                            ]} 
+                                        />
+                                    </div>
+                                )}
+
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <Input label="Full Name" value={customerData.name} onChange={e => setCustomerData({ ...customerData, name: e.target.value })} required placeholder="Customer name" />
                                     <Input label="Phone" type="tel" value={customerData.phone} onChange={e => setCustomerData({ ...customerData, phone: e.target.value })} required placeholder="0550..." />
