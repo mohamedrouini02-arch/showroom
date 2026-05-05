@@ -343,6 +343,9 @@ export function printRentalAgreement(rental, car, customer) {
         
         /* Print styles */
         @media print {
+            .page-break {
+                page-break-before: always;
+            }
             body {
                 background: white;
             }
@@ -508,6 +511,9 @@ export function printRentalAgreement(rental, car, customer) {
                     </div>
                 </div>
             </div>
+
+            <!-- Page break for professional layout -->
+            <div class="page-break"></div>
 
             <!-- Conditions -->
             <div class="section-title">

@@ -37,7 +37,7 @@ export default function Inventory() {
 
     const fetchCars = async () => {
         setLoading(true);
-        const { data, error } = await supabase.from('cars').select('*').order('created_at', { ascending: false });
+        const { data, error } = await supabase.from('cars').select('*, rentals(total_cost)').order('created_at', { ascending: false });
         if (error) console.error('Error fetching cars:', error);
         else setCars(data || []);
         setLoading(false);
@@ -119,7 +119,9 @@ export default function Inventory() {
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-                        {cars.map(car => (
+                        {cars.map(car => {
+                            const rentalEarnings = car.rentals?.reduce((sum, r) => sum + (Number(r.total_cost) || 0), 0) || 0;
+                            return (
                             <div key={car.id} className="glass rounded-2xl overflow-hidden group hover:border-slate-700/50 transition-all">
                                 {car.photos && car.photos.length > 0 && <CarPhotoCarousel photos={car.photos} />}
 
@@ -146,6 +148,13 @@ export default function Inventory() {
                                         </div>
                                     </div>
 
+                                    <div className="bg-emerald-500/10 border border-emerald-500/20 p-2.5 rounded-xl mb-4 flex justify-between items-center">
+                                        <span className="text-xs font-bold text-emerald-500 flex items-center gap-1">
+                                            <DollarSign size={14} /> Rental Earnings
+                                        </span>
+                                        <span className="text-sm font-bold text-emerald-400">{formatMoney(rentalEarnings)}</span>
+                                    </div>
+
                                     {car.damages?.length > 0 && (
                                         <div className="bg-red-500/5 border border-red-500/10 p-3 rounded-xl mb-4">
                                             <p className="text-xs font-bold text-red-400 mb-1 flex items-center gap-1"><AlertTriangle size={12} /> Damages</p>
@@ -164,7 +173,8 @@ export default function Inventory() {
                                     </div>
                                 </div>
                             </div>
-                        ))}
+                            );
+                        })}
                         {cars.length === 0 && <p className="text-slate-600 col-span-full text-center py-20">No vehicles found. Add one to get started.</p>}
                     </div>
                 )}
