@@ -213,14 +213,43 @@ export default function Rentals() {
 
     const openReturnModal = (rental) => {
         setRentalToReturn(rental);
-        setReturnMileage(rental.cars?.mileage || '');
+        setReturnMileage(rental.mileage_out || rental.cars?.mileage || '');
         setIsReturnModalOpen(true);
+    };
+
+    const calculateExtraCost = () => {
+        if (!rentalToReturn || !returnMileage) return { driven: 0, allowed: 0, excess: 0, cost: 0 };
+        
+        const start = new Date(rentalToReturn.start_date);
+        const end = new Date(rentalToReturn.end_date);
+        const diffDays = Math.max(1, Math.ceil(Math.abs(end - start) / (1000 * 60 * 60 * 24)));
+        const allowedMileage = diffDays * 400;
+        
+        const startMileage = rentalToReturn.mileage_out || rentalToReturn.cars?.mileage || 0;
+        const currentMileage = Number(returnMileage);
+        
+        const distanceDriven = Math.max(0, currentMileage - startMileage);
+        const excess = Math.max(0, distanceDriven - allowedMileage);
+        
+        return { 
+            driven: distanceDriven,
+            allowed: allowedMileage,
+            excess: excess, 
+            cost: excess * 15 
+        };
     };
 
     const submitReturn = async (e) => {
         e.preventDefault();
         try {
-            await supabase.from('rentals').update({ status: 'Returned', returned_at: new Date().toISOString() }).eq('id', rentalToReturn.id);
+            const { cost: extraCost } = calculateExtraCost();
+            const finalCost = (rentalToReturn.total_cost || 0) + extraCost;
+
+            await supabase.from('rentals').update({ 
+                status: 'Returned', 
+                returned_at: new Date().toISOString(),
+                total_cost: finalCost
+            }).eq('id', rentalToReturn.id);
             
             const updatePayload = { status: 'Available' };
             if (returnMileage) {
@@ -231,6 +260,7 @@ export default function Rentals() {
             
             setIsReturnModalOpen(false);
             setRentalToReturn(null);
+            setReturnMileage('');
             fetchRentals();
             fetchAvailableCars();
         } catch (error) {
@@ -431,9 +461,36 @@ export default function Rentals() {
                     <form onSubmit={submitReturn} className="space-y-4">
                         <div className="bg-slate-800/30 rounded-xl p-4 border border-slate-700/30">
                             <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Vehicle</p>
-                            <p className="font-semibold text-white">{rentalToReturn?.cars?.year} {rentalToReturn?.cars?.make} {rentalToReturn?.cars?.model}</p>
+                            <p className="font-semibold text-white mb-2">{rentalToReturn?.cars?.year} {rentalToReturn?.cars?.make} {rentalToReturn?.cars?.model}</p>
+                            <p className="text-xs text-slate-400">Mileage at Pickup: <span className="text-white font-medium">{rentalToReturn?.mileage_out || rentalToReturn?.cars?.mileage || 0} km</span></p>
                         </div>
+                        
                         <Input label="New Mileage (KM)" type="number" value={returnMileage} onChange={e => setReturnMileage(e.target.value)} required placeholder="Enter updated odometer reading" />
+                        
+                        {returnMileage && Number(returnMileage) > (rentalToReturn?.mileage_out || rentalToReturn?.cars?.mileage || 0) && (
+                            <div className={`p-4 rounded-xl border ${calculateExtraCost().cost > 0 ? 'bg-red-500/10 border-red-500/20' : 'bg-slate-800/50 border-slate-700/50'}`}>
+                                <div className="grid grid-cols-2 gap-y-2 text-sm mb-2">
+                                    <div className="text-slate-400">Distance Driven:</div>
+                                    <div className="text-right text-white font-medium">{calculateExtraCost().driven} km</div>
+                                    
+                                    <div className="text-slate-400">Allowed Limit:</div>
+                                    <div className="text-right text-white font-medium">{calculateExtraCost().allowed} km</div>
+                                    
+                                    <div className="text-slate-400">Excess Mileage:</div>
+                                    <div className={`text-right font-bold ${calculateExtraCost().excess > 0 ? 'text-red-400' : 'text-emerald-400'}`}>
+                                        {calculateExtraCost().excess} km
+                                    </div>
+                                </div>
+                                
+                                {calculateExtraCost().cost > 0 && (
+                                    <div className="mt-3 pt-3 border-t border-red-500/20 flex justify-between items-center">
+                                        <span className="text-sm font-bold text-red-400">Extra Cost (15 DA/km):</span>
+                                        <span className="text-lg font-bold text-red-400">+{formatMoney(calculateExtraCost().cost)}</span>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
                         <div className="flex justify-end pt-2">
                             <Button type="submit" variant="success">Confirm Return</Button>
                         </div>
