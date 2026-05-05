@@ -9,16 +9,18 @@ import HR from './pages/HR';
 
 function App() {
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<Dashboard />} />
-        <Route path="/inventory" element={<Inventory />} />
-        <Route path="/sales" element={<Sales />} />
-        <Route path="/rentals" element={<Rentals />} />
-        <Route path="/customers" element={<Customers />} />
-        <Route path="/hr" element={<HR />} />
-      </Routes>
-    </Router>
+    <div className="dark">
+      <Router>
+        <Routes>
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/inventory" element={<Inventory />} />
+          <Route path="/sales" element={<Sales />} />
+          <Route path="/rentals" element={<Rentals />} />
+          <Route path="/customers" element={<Customers />} />
+          <Route path="/hr" element={<HR />} />
+        </Routes>
+      </Router>
+    </div>
   );
 }
 

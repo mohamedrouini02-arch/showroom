@@ -1,20 +1,20 @@
 import React from 'react';
-import { XCircle } from 'lucide-react';
+import { X } from 'lucide-react';
 
 export const Button = ({ children, onClick, variant = 'primary', className = '', icon: Icon, disabled = false, size = 'md', type = 'button' }) => {
-    const baseStyle = "flex items-center justify-center rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed";
+    const baseStyle = "inline-flex items-center justify-center rounded-xl font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.98]";
     const sizes = {
-        sm: "px-2 py-1 text-xs",
-        md: "px-4 py-2 text-sm",
-        lg: "px-6 py-3 text-base"
+        sm: "px-3 py-1.5 text-xs gap-1.5",
+        md: "px-5 py-2.5 text-sm gap-2",
+        lg: "px-7 py-3.5 text-base gap-2"
     };
     const variants = {
-        primary: "bg-blue-600 hover:bg-blue-700 text-white focus:ring-blue-500",
-        secondary: "bg-gray-100 hover:bg-gray-200 text-gray-700 focus:ring-gray-500 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600",
-        danger: "bg-red-50 hover:bg-red-100 text-red-600 focus:ring-red-500 dark:bg-red-900/20 dark:hover:bg-red-900/30",
-        success: "bg-green-600 hover:bg-green-700 text-white focus:ring-green-500",
-        whatsapp: "bg-green-500 hover:bg-green-600 text-white focus:ring-green-400",
-        outline: "border-2 border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800"
+        primary: "bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 text-white shadow-lg shadow-brand-500/20 focus:ring-brand-500",
+        secondary: "bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 focus:ring-slate-500",
+        danger: "bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 focus:ring-red-500",
+        success: "bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white shadow-lg shadow-emerald-500/20 focus:ring-emerald-500",
+        ghost: "hover:bg-slate-800 text-slate-400 hover:text-white focus:ring-slate-500",
+        outline: "border border-slate-700 hover:bg-slate-800 hover:border-slate-600 text-slate-300 focus:ring-brand-500"
     };
 
     return (
@@ -24,37 +24,37 @@ export const Button = ({ children, onClick, variant = 'primary', className = '',
             className={`${baseStyle} ${sizes[size]} ${variants[variant]} ${className}`}
             disabled={disabled}
         >
-            {Icon && <Icon size={size === 'sm' ? 14 : 18} className="mr-2" />}
+            {Icon && <Icon size={size === 'sm' ? 14 : size === 'lg' ? 20 : 16} />}
             {children}
         </button>
     );
 };
 
-export const Card = ({ title, value, icon: Icon, trend, subtext, color = "blue" }) => {
-    const colorClasses = {
-        blue: "bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400",
-        green: "bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400",
-        purple: "bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400",
-        orange: "bg-orange-50 text-orange-600 dark:bg-orange-900/20 dark:text-orange-400",
-        red: "bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400",
+export const Card = ({ title, value, icon: Icon, subtext, color = "brand" }) => {
+    const colorMap = {
+        brand: { bg: 'from-brand-500/20 to-brand-600/5', icon: 'text-brand-400', border: 'border-brand-500/10' },
+        green: { bg: 'from-emerald-500/20 to-emerald-600/5', icon: 'text-emerald-400', border: 'border-emerald-500/10' },
+        purple: { bg: 'from-purple-500/20 to-purple-600/5', icon: 'text-purple-400', border: 'border-purple-500/10' },
+        orange: { bg: 'from-orange-500/20 to-orange-600/5', icon: 'text-orange-400', border: 'border-orange-500/10' },
+        blue: { bg: 'from-blue-500/20 to-blue-600/5', icon: 'text-blue-400', border: 'border-blue-500/10' },
+        red: { bg: 'from-red-500/20 to-red-600/5', icon: 'text-red-400', border: 'border-red-500/10' },
     };
+    const c = colorMap[color] || colorMap.brand;
 
     return (
-        <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
+        <div className={`stat-card bg-gradient-to-br ${c.bg} backdrop-blur-sm p-6 border ${c.border} glow-brand`}>
             <div className="flex justify-between items-start">
                 <div>
-                    <p className="text-sm font-medium text-slate-500 dark:text-slate-400">{title}</p>
-                    <h3 className="text-2xl font-bold text-slate-900 dark:text-white mt-2">{value}</h3>
+                    <p className="text-sm font-medium text-slate-400 tracking-wide uppercase">{title}</p>
+                    <h3 className="text-3xl font-bold text-white mt-2 tracking-tight">{value}</h3>
                 </div>
-                <div className={`p-3 rounded-lg ${colorClasses[color]}`}>
+                <div className={`p-3 rounded-xl bg-slate-800/80 ${c.icon}`}>
                     <Icon size={24} />
                 </div>
             </div>
             {subtext && (
-                <div className="mt-4 flex items-center text-sm">
-                    <span className={`font-medium ${trend === 'up' ? 'text-green-600' : 'text-slate-500'}`}>
-                        {subtext}
-                    </span>
+                <div className="mt-4 pt-3 border-t border-slate-800/50">
+                    <span className="text-xs font-medium text-slate-500">{subtext}</span>
                 </div>
             )}
         </div>
@@ -63,14 +63,17 @@ export const Card = ({ title, value, icon: Icon, trend, subtext, color = "blue" 
 
 export const Modal = ({ isOpen, onClose, title, children, size = 'md' }) => {
     if (!isOpen) return null;
-    const maxWidth = size === 'lg' ? 'max-w-4xl' : 'max-w-lg';
+    const maxWidth = size === 'lg' ? 'max-w-4xl' : size === 'xl' ? 'max-w-6xl' : 'max-w-lg';
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-            <div className={`bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full ${maxWidth} max-h-[90vh] overflow-y-auto`}>
-                <div className="flex justify-between items-center p-6 border-b border-slate-200 dark:border-slate-700 sticky top-0 bg-white dark:bg-slate-800 z-10">
-                    <h2 className="text-xl font-semibold text-slate-900 dark:text-white">{title}</h2>
-                    <button onClick={onClose} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
-                        <XCircle size={24} />
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in" onClick={onClose}>
+            <div
+                className={`glass rounded-2xl shadow-2xl shadow-black/30 w-full ${maxWidth} max-h-[90vh] overflow-y-auto animate-slide-up`}
+                onClick={e => e.stopPropagation()}
+            >
+                <div className="flex justify-between items-center p-6 border-b border-slate-800/50 sticky top-0 glass z-10 rounded-t-2xl">
+                    <h2 className="text-lg font-bold text-white">{title}</h2>
+                    <button onClick={onClose} className="text-slate-500 hover:text-white transition-colors p-1 rounded-lg hover:bg-slate-800">
+                        <X size={20} />
                     </button>
                 </div>
                 <div className="p-6">
@@ -81,25 +84,25 @@ export const Modal = ({ isOpen, onClose, title, children, size = 'md' }) => {
     );
 };
 
-export const Input = ({ label, className, ...props }) => (
+export const Input = ({ label, className = '', ...props }) => (
     <div className={`mb-4 ${className}`}>
-        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{label}</label>
+        {label && <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">{label}</label>}
         <input
-            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-slate-900 text-slate-900 dark:text-white transition-colors disabled:bg-slate-100 disabled:text-slate-500"
+            className="w-full px-4 py-2.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-500 focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 transition-all outline-none text-sm"
             {...props}
         />
     </div>
 );
 
-export const Select = ({ label, options, className, ...props }) => (
+export const Select = ({ label, options, className = '', ...props }) => (
     <div className={`mb-4 ${className}`}>
-        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{label}</label>
+        {label && <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">{label}</label>}
         <select
-            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-slate-900 text-slate-900 dark:text-white transition-colors"
+            className="w-full px-4 py-2.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 transition-all outline-none text-sm appearance-none cursor-pointer"
             {...props}
         >
             {options.map(opt => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
+                <option key={opt.value} value={opt.value} className="bg-slate-800">{opt.label}</option>
             ))}
         </select>
     </div>
