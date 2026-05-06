@@ -5,7 +5,8 @@ import {
     Briefcase,
     LayoutDashboard,
     Key,
-    DollarSign
+    DollarSign,
+    Calendar
 } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 
@@ -18,6 +19,7 @@ export default function Layout({ children, title }) {
         { id: 'inventory', label: 'Inventory', icon: Car, path: '/inventory' },
         { id: 'sales', label: 'Sales', icon: DollarSign, path: '/sales' },
         { id: 'rentals', label: 'Rentals', icon: Key, path: '/rentals' },
+        { id: 'appointments', label: 'Appointments', icon: Calendar, path: '/appointments' },
         { id: 'customers', label: 'Customers', icon: Briefcase, path: '/customers' },
         { id: 'hr', label: 'Staff', icon: Users, path: '/hr' },
     ];

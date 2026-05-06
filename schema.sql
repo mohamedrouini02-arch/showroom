@@ -11,6 +11,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- 1. CARS TABLE (Inventory)
 -- Used by: Inventory, Sales, Rentals, Dashboard
 -- ============================================================
+DROP TABLE IF EXISTS public.rental_appointments CASCADE;
 DROP TABLE IF EXISTS public.rentals CASCADE;
 DROP TABLE IF EXISTS public.sales CASCADE;
 DROP TABLE IF EXISTS public.employees CASCADE;
@@ -128,6 +129,27 @@ CREATE INDEX idx_rentals_created_at ON public.rentals(created_at DESC);
 CREATE INDEX idx_rentals_end_date ON public.rentals(end_date ASC);
 
 -- ============================================================
+-- 5.5 RENTAL APPOINTMENTS TABLE
+-- Used by: Appointments
+-- ============================================================
+CREATE TABLE public.rental_appointments (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    customer_id UUID REFERENCES public.customers(id) ON DELETE CASCADE,
+    car_id UUID REFERENCES public.cars(id) ON DELETE SET NULL,
+    appointment_date DATE NOT NULL,
+    appointment_time TIME NOT NULL,
+    status TEXT DEFAULT 'Scheduled'
+        CHECK (status IN ('Scheduled', 'Completed', 'Cancelled', 'No Show')),
+    notes TEXT,
+    created_at TIMESTAMPTZ DEFAULT timezone('utc'::TEXT, now()) NOT NULL
+);
+
+-- Indexes for rental_appointments
+CREATE INDEX idx_rental_appointments_customer_id ON public.rental_appointments(customer_id);
+CREATE INDEX idx_rental_appointments_date ON public.rental_appointments(appointment_date);
+CREATE INDEX idx_rental_appointments_status ON public.rental_appointments(status);
+
+-- ============================================================
 -- 6. ROW LEVEL SECURITY (RLS)
 -- Open access for now (no auth required)
 -- ============================================================
@@ -136,6 +158,7 @@ ALTER TABLE public.customers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.employees ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.sales ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.rentals ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.rental_appointments ENABLE ROW LEVEL SECURITY;
 
 -- Allow full access for anon/authenticated users (prototype mode)
 CREATE POLICY "Allow all access on cars" ON public.cars
@@ -151,6 +174,9 @@ CREATE POLICY "Allow all access on sales" ON public.sales
     FOR ALL USING (true) WITH CHECK (true);
 
 CREATE POLICY "Allow all access on rentals" ON public.rentals
+    FOR ALL USING (true) WITH CHECK (true);
+
+CREATE POLICY "Allow all access on rental_appointments" ON public.rental_appointments
     FOR ALL USING (true) WITH CHECK (true);
 
 -- ============================================================
