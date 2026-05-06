@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Plus, Key, CheckCircle, FileText, Pencil, Car, User, Calendar, Clock, Gauge } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { Button, Modal, Input, Select } from '../components/ui';
 import { supabase } from '../lib/supabase';
@@ -13,6 +14,9 @@ export default function Rentals() {
     const [isReturnModalOpen, setIsReturnModalOpen] = useState(false);
     const [rentalToReturn, setRentalToReturn] = useState(null);
     const [returnMileage, setReturnMileage] = useState('');
+    const [linkedAppointmentId, setLinkedAppointmentId] = useState(null);
+    const location = useLocation();
+    const navigate = useNavigate();
 
     // Data for dropdowns
     const [availableCars, setAvailableCars] = useState([]);
@@ -38,6 +42,52 @@ export default function Rentals() {
         fetchAvailableCars();
         fetchExistingCustomers();
     }, []);
+
+    useEffect(() => {
+        if (location.state?.createRentalFromAppointment) {
+            const apt = location.state.createRentalFromAppointment;
+            
+            setEditingRental(null);
+            setSelectedCustomerId(apt.customer_id);
+            setCustomerData({
+                name: apt.customers?.name || '',
+                phone: apt.customers?.phone || '',
+                address: '',
+                national_id: ''
+            });
+            
+            setRentData({
+                startDate: apt.appointment_date || '',
+                endDate: '',
+                dailyRate: '',
+                mileageOut: '',
+                pickupTime: apt.appointment_time || ''
+            });
+
+            if (apt.car_id) {
+                setSelectedCarId(apt.car_id);
+                supabase.from('cars').select('*').eq('id', apt.car_id).single().then(({data}) => {
+                    if (data) {
+                        setSelectedCar(data);
+                        setRentData(prev => ({
+                            ...prev,
+                            dailyRate: prev.dailyRate || 7000,
+                            mileageOut: data.mileage || ''
+                        }));
+                    }
+                });
+            } else {
+                setSelectedCarId('');
+                setSelectedCar(null);
+            }
+            
+            setLinkedAppointmentId(apt.id);
+            setIsRentModalOpen(true);
+            
+            // Clear state so it doesn't trigger on reload
+            navigate('/rentals', { replace: true, state: {} });
+        }
+    }, [location.state, navigate]);
 
     const fetchExistingCustomers = async () => {
         const { data } = await supabase.from('customers').select('*').order('name', { ascending: true });
@@ -99,6 +149,7 @@ export default function Rentals() {
         setSelectedCustomerId('new');
         setCustomerData({ name: '', phone: '', address: '', national_id: '' });
         setRentData({ startDate: '', endDate: '', dailyRate: '', mileageOut: '', pickupTime: '' });
+        setLinkedAppointmentId(null);
         setIsRentModalOpen(true);
     };
 
@@ -199,6 +250,12 @@ export default function Rentals() {
 
                 // Update car status
                 await supabase.from('cars').update({ status: 'Rented' }).eq('id', selectedCarId);
+                
+                // If this rental was created from an appointment, mark appointment as Completed
+                if (linkedAppointmentId) {
+                    await supabase.from('rental_appointments').update({ status: 'Completed' }).eq('id', linkedAppointmentId);
+                    setLinkedAppointmentId(null);
+                }
             }
 
             setIsRentModalOpen(false);
@@ -368,6 +425,9 @@ export default function Rentals() {
                                                 </span>
                                                 {car.color && (
                                                     <span className="text-xs bg-slate-800 text-slate-400 px-2 py-0.5 rounded-md">{car.color}</span>
+                                                )}
+                                                {car.vin && (
+                                                    <span className="text-xs bg-slate-800 text-slate-400 px-2 py-0.5 rounded-md">VIN: {car.vin.slice(-6)}</span>
                                                 )}
                                                 <span className="text-xs bg-slate-800 text-slate-400 px-2 py-0.5 rounded-md">{car.fuel}</span>
                                                 <span className="text-xs bg-slate-800 text-slate-400 px-2 py-0.5 rounded-md">{car.transmission}</span>

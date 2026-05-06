@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Calendar, Pencil, CheckCircle, XCircle, Car, User, Clock, FileText } from 'lucide-react';
+import { Plus, Calendar, Pencil, CheckCircle, XCircle, Car, User, Clock, FileText, ArrowRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { Button, Modal, Input, Select } from '../components/ui';
 import { supabase } from '../lib/supabase';
@@ -9,6 +10,7 @@ export default function Appointments() {
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingAppointment, setEditingAppointment] = useState(null);
+    const navigate = useNavigate();
 
     // Form Data
     const [existingCustomers, setExistingCustomers] = useState([]);
@@ -151,6 +153,10 @@ export default function Appointments() {
         }
     };
 
+    const convertToRental = (apt) => {
+        navigate('/rentals', { state: { createRentalFromAppointment: apt } });
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
@@ -254,7 +260,7 @@ export default function Appointments() {
                                             <div className="flex justify-end gap-2">
                                                 {apt.status === 'Scheduled' && (
                                                     <>
-                                                        <Button size="sm" variant="ghost" onClick={() => updateStatus(apt.id, 'Completed')} icon={CheckCircle} className="text-emerald-400 hover:text-emerald-300 hover:bg-emerald-400/10" />
+                                                        <Button size="sm" variant="ghost" onClick={() => convertToRental(apt)} icon={ArrowRight} className="text-emerald-400 hover:text-emerald-300 hover:bg-emerald-400/10">Convert to Rental</Button>
                                                         <Button size="sm" variant="ghost" onClick={() => updateStatus(apt.id, 'No Show')} icon={XCircle} className="text-orange-400 hover:text-orange-300 hover:bg-orange-400/10" />
                                                     </>
                                                 )}
@@ -331,7 +337,10 @@ export default function Appointments() {
                                     onChange={handleCarSelect}
                                     options={[
                                         { label: 'Not decided yet', value: '' },
-                                        ...allCars.map(c => ({ label: `${c.year} ${c.make} ${c.model} (${c.status})`, value: c.id }))
+                                        ...allCars.map(c => {
+                                            const extraInfo = [c.color, c.vin ? `VIN: ${c.vin.slice(-6)}` : null, `${c.mileage?.toLocaleString() || 0} km`].filter(Boolean).join(' • ');
+                                            return { label: `${c.year} ${c.make} ${c.model} - ${extraInfo} (${c.status})`, value: c.id };
+                                        })
                                     ]} 
                                 />
                             </div>
