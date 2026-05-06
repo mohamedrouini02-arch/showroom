@@ -12,7 +12,9 @@ export default function Appointments() {
 
     // Form Data
     const [existingCustomers, setExistingCustomers] = useState([]);
-    const [availableCars, setAvailableCars] = useState([]);
+    const [allCars, setAllCars] = useState([]);
+    const [carSchedule, setCarSchedule] = useState({ rentals: [], appointments: [] });
+    const [loadingSchedule, setLoadingSchedule] = useState(false);
     const [selectedCustomerId, setSelectedCustomerId] = useState('new');
     const [customerData, setCustomerData] = useState({ name: '', phone: '', address: '', national_id: '' });
     const [appointmentData, setAppointmentData] = useState({
@@ -29,8 +31,8 @@ export default function Appointments() {
     }, []);
 
     const fetchDropdownData = async () => {
-        const { data: cars } = await supabase.from('cars').select('*').eq('status', 'Available');
-        setAvailableCars(cars || []);
+        const { data: cars } = await supabase.from('cars').select('*').order('make', { ascending: true });
+        setAllCars(cars || []);
         
         const { data: customers } = await supabase.from('customers').select('*').order('name', { ascending: true });
         setExistingCustomers(customers || []);
@@ -67,6 +69,40 @@ export default function Appointments() {
         }
     };
 
+    const handleCarSelect = async (e) => {
+        const carId = e.target.value;
+        setAppointmentData({ ...appointmentData, carId });
+        
+        if (!carId) {
+            setCarSchedule({ rentals: [], appointments: [] });
+            return;
+        }
+
+        setLoadingSchedule(true);
+        // Fetch active/future rentals
+        const { data: rentals } = await supabase
+            .from('rentals')
+            .select('start_date, end_date, status')
+            .eq('car_id', carId)
+            .gte('end_date', new Date().toISOString().split('T')[0])
+            .order('start_date', { ascending: true });
+
+        // Fetch future appointments
+        const { data: appointments } = await supabase
+            .from('rental_appointments')
+            .select('appointment_date, appointment_time, status')
+            .eq('car_id', carId)
+            .in('status', ['Scheduled'])
+            .gte('appointment_date', new Date().toISOString().split('T')[0])
+            .order('appointment_date', { ascending: true });
+
+        setCarSchedule({
+            rentals: rentals || [],
+            appointments: appointments || []
+        });
+        setLoadingSchedule(false);
+    };
+
     const openNewModal = () => {
         setEditingAppointment(null);
         setSelectedCustomerId('new');
@@ -78,6 +114,7 @@ export default function Appointments() {
             status: 'Scheduled',
             notes: ''
         });
+        setCarSchedule({ rentals: [], appointments: [] });
         setIsModalOpen(true);
     };
 
@@ -97,6 +134,13 @@ export default function Appointments() {
             status: apt.status,
             notes: apt.notes || ''
         });
+        
+        if (apt.car_id) {
+            handleCarSelect({ target: { value: apt.car_id } });
+        } else {
+            setCarSchedule({ rentals: [], appointments: [] });
+        }
+        
         setIsModalOpen(true);
     };
 
@@ -284,13 +328,40 @@ export default function Appointments() {
                                 <Select 
                                     label="Requested Vehicle (Optional)" 
                                     value={appointmentData.carId} 
-                                    onChange={e => setAppointmentData({ ...appointmentData, carId: e.target.value })}
+                                    onChange={handleCarSelect}
                                     options={[
                                         { label: 'Not decided yet', value: '' },
-                                        ...availableCars.map(c => ({ label: `${c.year} ${c.make} ${c.model}`, value: c.id }))
+                                        ...allCars.map(c => ({ label: `${c.year} ${c.make} ${c.model} (${c.status})`, value: c.id }))
                                     ]} 
                                 />
                             </div>
+
+                            {appointmentData.carId && (
+                                <div className="mb-4 p-4 rounded-xl bg-slate-800/20 border border-slate-700/50">
+                                    <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Vehicle Schedule</h4>
+                                    {loadingSchedule ? (
+                                        <div className="text-xs text-slate-500">Loading schedule...</div>
+                                    ) : (
+                                        <div className="space-y-2">
+                                            {carSchedule.rentals.length === 0 && carSchedule.appointments.length === 0 && (
+                                                <div className="text-xs text-emerald-400">Currently no upcoming rentals or appointments.</div>
+                                            )}
+                                            {carSchedule.rentals.map((r, i) => (
+                                                <div key={`r-${i}`} className="text-xs flex items-center justify-between p-2 rounded-lg bg-orange-500/10 border border-orange-500/20">
+                                                    <span className="text-orange-400 font-medium">Rental ({r.status})</span>
+                                                    <span className="text-slate-400">{new Date(r.start_date).toLocaleDateString()} - {new Date(r.end_date).toLocaleDateString()}</span>
+                                                </div>
+                                            ))}
+                                            {carSchedule.appointments.map((a, i) => (
+                                                <div key={`a-${i}`} className="text-xs flex items-center justify-between p-2 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                                                    <span className="text-blue-400 font-medium">Appointment</span>
+                                                    <span className="text-slate-400">{new Date(a.appointment_date).toLocaleDateString()} at {a.appointment_time.slice(0, 5)}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
 
                             {editingAppointment && (
                                 <div className="mb-4">
