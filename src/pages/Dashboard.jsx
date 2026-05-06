@@ -37,16 +37,19 @@ export default function Dashboard() {
 
             if (salesError) throw salesError;
 
-            const totalRevenue = salesData?.reduce((acc, s) => acc + (Number(s.price) || 0), 0) || 0;
-            const totalProfit = salesData?.reduce((acc, s) => acc + (Number(s.profit) || 0), 0) || 0;
-
-            const { data: rentalsData, error: rentalsError } = await supabase
+            const { data: allRentalsData, error: rentalsError } = await supabase
                 .from('rentals')
                 .select('*, cars(make, model, year), customers(name)')
-                .eq('status', 'Active')
                 .order('end_date', { ascending: true });
 
             if (rentalsError) throw rentalsError;
+
+            const rentalRevenue = allRentalsData?.reduce((acc, r) => acc + (Number(r.total_cost) || 0), 0) || 0;
+
+            const totalRevenue = (salesData?.reduce((acc, s) => acc + (Number(s.price) || 0), 0) || 0) + rentalRevenue;
+            const totalProfit = (salesData?.reduce((acc, s) => acc + (Number(s.profit) || 0), 0) || 0) + rentalRevenue;
+
+            const activeRentals = allRentalsData?.filter(r => r.status === 'Active') || [];
 
             const { count: inventoryCount, error: inventoryError } = await supabase
                 .from('cars')
@@ -58,11 +61,11 @@ export default function Dashboard() {
             setStats({
                 totalRevenue,
                 totalProfit,
-                activeRentals: rentalsData?.length || 0,
+                activeRentals: activeRentals.length,
                 inventoryCount: inventoryCount || 0
             });
             setRecentSales(salesData?.slice(0, 5) || []);
-            setActiveRentalsList(rentalsData || []);
+            setActiveRentalsList(activeRentals);
 
         } catch (error) {
             console.error('Error fetching dashboard data:', error);
