@@ -100,7 +100,10 @@ export default function Sales() {
                 <Modal isOpen={isSellModalOpen} onClose={() => setIsSellModalOpen(false)} title="Finalize Sale">
                     <form onSubmit={handleSell} className="space-y-4">
                         <Select label="Select Vehicle" value={saleData.carId} onChange={handleCarSelect}
-                            options={[{ label: 'Select Car', value: '' }, ...availableCars.map(c => ({ label: `${c.year} ${c.make} ${c.model} — ${formatMoney(c.price)}`, value: c.id }))]} required />
+                            options={[{ label: 'Select Car', value: '' }, ...availableCars.map(c => {
+                                const extraInfo = [c.color, c.vin ? `VIN: ${c.vin.slice(-6)}` : null, `${c.mileage?.toLocaleString() || 0} km`].filter(Boolean).join(' • ');
+                                return { label: `${c.year} ${c.make} ${c.model} - ${extraInfo} — ${formatMoney(c.price)}`, value: c.id };
+                            })]} required />
 
                         {selectedCar && (
                             <div className="p-3 rounded-xl bg-slate-800/30 border border-slate-700/20 text-sm">
