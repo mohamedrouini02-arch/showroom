@@ -59,35 +59,39 @@ export function printRentalAgreement(rental, car, customer) {
         }
         
         @page {
-            size: A4;
+            size: A4 portrait;
             margin: 0;
         }
         
         body {
             font-family: 'Noto Kufi Arabic', 'Amiri', 'Traditional Arabic', sans-serif;
-            font-size: 12px;
+            font-size: 11.5px;
             line-height: 1.6;
             color: #0f172a;
-            background: #e2e8f0;
+            background: #cbd5e1;
             direction: rtl;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
         }
         
-        /* A4 Page Container */
+        /* Strict Full Size A4 Page Container */
         .page {
             width: 210mm;
             height: 297mm;
+            min-height: 297mm;
+            max-height: 297mm;
             background: white;
-            margin: 10mm auto;
+            margin: 8mm auto;
             padding: 12mm 15mm;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            box-shadow: 0 12px 35px rgba(0,0,0,0.18);
             position: relative;
             page-break-after: always;
+            page-break-inside: avoid;
             display: flex;
-            flex-col: column;
+            flex-direction: column;
             justify-content: space-between;
             overflow: hidden;
+            box-sizing: border-box;
         }
 
         /* Outer Frame Border */
@@ -126,42 +130,42 @@ export function printRentalAgreement(rental, car, customer) {
         .header {
             background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
             color: white;
-            padding: 12px 18px;
+            padding: 14px 20px;
             border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: space-between;
             margin-bottom: 12px;
             box-shadow: 0 4px 12px rgba(15, 23, 42, 0.2);
-            border-bottom: 3px solid #3b82f6;
+            border-bottom: 3.5px solid #3b82f6;
         }
 
         .brand-title {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 14px;
         }
 
         .brand-logo {
             background: #3b82f6;
             color: white;
             font-weight: 900;
-            font-size: 20px;
-            width: 44px;
-            height: 44px;
-            border-radius: 10px;
+            font-size: 22px;
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+            box-shadow: 0 2px 10px rgba(59, 130, 246, 0.4);
         }
 
         .brand-text h1 {
-            font-size: 20px;
-            font-weight: 800;
+            font-size: 21px;
+            font-weight: 900;
             letter-spacing: -0.5px;
             color: #ffffff;
-            margin-bottom: 1px;
+            margin-bottom: 2px;
         }
 
         .brand-text p {
@@ -172,19 +176,19 @@ export function printRentalAgreement(rental, car, customer) {
 
         .contract-meta {
             text-align: left;
-            background: rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.09);
             padding: 8px 14px;
             border-radius: 8px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.12);
         }
 
         .contract-badge {
             display: inline-block;
             background: #3b82f6;
             color: white;
-            font-size: 11px;
-            font-weight: 700;
-            padding: 2px 8px;
+            font-size: 11.5px;
+            font-weight: 800;
+            padding: 3px 10px;
             border-radius: 4px;
             margin-bottom: 3px;
         }
@@ -199,8 +203,8 @@ export function printRentalAgreement(rental, car, customer) {
             background: #f8fafc;
             border: 1px solid #e2e8f0;
             border-radius: 10px;
-            padding: 10px 14px;
-            margin-bottom: 10px;
+            padding: 11px 14px;
+            margin-bottom: 11px;
         }
 
         .section-header {
@@ -208,7 +212,7 @@ export function printRentalAgreement(rental, car, customer) {
             align-items: center;
             justify-content: space-between;
             padding-bottom: 6px;
-            margin-bottom: 8px;
+            margin-bottom: 9px;
             border-bottom: 2px solid #e2e8f0;
         }
 
@@ -218,19 +222,19 @@ export function printRentalAgreement(rental, car, customer) {
             color: #0f172a;
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 7px;
         }
 
         .section-title span.icon {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            width: 22px;
-            height: 22px;
+            width: 24px;
+            height: 24px;
             background: #0f172a;
             color: white;
             border-radius: 6px;
-            font-size: 11px;
+            font-size: 12px;
         }
 
         /* Data Grid Table Layout */
@@ -261,7 +265,7 @@ export function printRentalAgreement(rental, car, customer) {
             font-size: 10px;
             font-weight: 700;
             color: #64748b;
-            margin-bottom: 2px;
+            margin-bottom: 3px;
             text-transform: uppercase;
         }
 
@@ -270,10 +274,10 @@ export function printRentalAgreement(rental, car, customer) {
             font-weight: 700;
             color: #0f172a;
             background: white;
-            padding: 5px 8px;
+            padding: 6px 10px;
             border-radius: 6px;
             border: 1px solid #cbd5e1;
-            min-height: 28px;
+            min-height: 32px;
             display: flex;
             align-items: center;
         }
@@ -281,16 +285,16 @@ export function printRentalAgreement(rental, car, customer) {
         /* Highlight Cards for Financials */
         .financial-summary {
             display: grid;
-            grid-template-columns: 1.2fr 1fr 1.2fr;
+            grid-template-columns: 1.2fr 1.2fr 1fr 1.2fr;
             gap: 10px;
-            margin: 10px 0;
+            margin: 10px 0 4px 0;
         }
 
         .fin-card {
             background: white;
             border: 1.5px solid #cbd5e1;
             border-radius: 10px;
-            padding: 10px;
+            padding: 10px 8px;
             text-align: center;
         }
 
@@ -318,41 +322,97 @@ export function printRentalAgreement(rental, car, customer) {
         }
 
         .fin-label {
-            font-size: 10.5px;
+            font-size: 10px;
             font-weight: 700;
             color: #475569;
             margin-bottom: 4px;
         }
 
         .fin-value {
-            font-size: 18px;
+            font-size: 17px;
             font-weight: 900;
             color: #0f172a;
         }
 
-        /* Visual Inspection Checklist */
+        /* Visual Inspection Grid & Diagram */
+        .inspection-box {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .diagram-container {
+            background: white;
+            border: 1px dashed #cbd5e1;
+            border-radius: 8px;
+            padding: 8px;
+            text-align: center;
+        }
+
+        .car-diagram-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+            margin-top: 4px;
+        }
+
+        .diagram-spot {
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            padding: 5px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 700;
+            color: #334155;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .diagram-spot span.mark {
+            font-weight: 900;
+            color: #16a34a;
+        }
+
         .checklist-grid {
             display: grid;
-            grid-template-columns: repeat(5, 1fr);
+            grid-template-columns: 1fr 1fr;
             gap: 6px;
-            margin-top: 6px;
         }
 
         .check-item {
             background: white;
             border: 1px solid #cbd5e1;
             border-radius: 6px;
-            padding: 6px;
-            text-align: center;
-            font-size: 10px;
-            font-weight: 600;
+            padding: 6px 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 10.5px;
+            font-weight: 700;
         }
 
         .check-item span.status {
-            display: block;
             font-weight: 800;
             color: #16a34a;
-            margin-top: 2px;
+        }
+
+        /* Handover Signatures Box Page 1 */
+        .handover-sign-box {
+            background: #f1f5f9;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            padding: 8px 12px;
+            margin-top: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .handover-sign-item {
+            font-size: 10.5px;
+            font-weight: 700;
+            color: #334155;
         }
 
         /* Conditions Styling for Page 2 */
@@ -512,10 +572,14 @@ export function printRentalAgreement(rental, car, customer) {
                 background: white;
             }
             .page {
-                margin: 0;
-                box-shadow: none;
-                width: 210mm;
-                height: 297mm;
+                margin: 0 !important;
+                box-shadow: none !important;
+                width: 210mm !important;
+                height: 297mm !important;
+                min-height: 297mm !important;
+                max-height: 297mm !important;
+                page-break-after: always !important;
+                page-break-inside: avoid !important;
             }
             .print-toolbar {
                 display: none !important;
@@ -527,7 +591,7 @@ export function printRentalAgreement(rental, car, customer) {
 
     <!-- Floating Print Button -->
     <div class="print-toolbar">
-        <span style="color: white; font-size: 13px; font-weight: 600;">📄 عقد إيجار رسمي (صفحتين A4)</span>
+        <span style="color: white; font-size: 13px; font-weight: 600;">📄 عقد إيجار رسمي (صفحتين A4 متطابقتين)</span>
         <button class="btn-print" onclick="window.print()">🖨️ طباعة العقد</button>
     </div>
 
@@ -561,10 +625,10 @@ export function printRentalAgreement(rental, car, customer) {
                             <span class="icon">👤</span>
                             أولاً: بيانات المستأجر (الطرف الثاني)
                         </div>
-                        <span style="font-size: 10px; font-weight: 700; color: #1e40af; background: #dbeafe; px-2 py-0.5; rounded-md;">نسخة رخصة السياقة مرفقة</span>
+                        <span style="font-size: 10px; font-weight: 700; color: #1e40af; background: #dbeafe; padding: 2px 8px; border-radius: 4px;">نسخة رخصة السياقة مرفقة</span>
                     </div>
 
-                    <div class="grid-2" style="margin-bottom: 6px;">
+                    <div class="grid-2" style="margin-bottom: 8px;">
                         <div class="field-group">
                             <span class="field-label">الاسم واللقب الكامل</span>
                             <div class="field-value">${customerName}</div>
@@ -596,7 +660,7 @@ export function printRentalAgreement(rental, car, customer) {
                         </div>
                     </div>
 
-                    <div class="grid-4" style="margin-bottom: 6px;">
+                    <div class="grid-4" style="margin-bottom: 8px;">
                         <div class="field-group">
                             <span class="field-label">ماركة المركبة</span>
                             <div class="field-value">${carMake}</div>
@@ -664,50 +728,69 @@ export function printRentalAgreement(rental, car, customer) {
                             <div class="fin-label">المبلغ الإجمالي المستحق</div>
                             <div class="fin-value">${formatMoney(totalCost)}</div>
                         </div>
+                        <div class="fin-card">
+                            <div class="fin-label">مبلغ الضمان المسترد</div>
+                            <div class="fin-value" style="color: #059669;">تأمين رسمي</div>
+                        </div>
                         <div class="fin-card primary">
-                            <div class="fin-label">الحد الأقصى للكيلومترات</div>
-                            <div class="fin-value" style="font-size: 16px;">400 كم / يوم</div>
+                            <div class="fin-label">الحد المسموح للكيلومترات</div>
+                            <div class="fin-value" style="font-size: 15px;">400 كم / يوم</div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Section 4: Visual Inspection Grid -->
+                <!-- Section 4: Inspection & Handover Diagram -->
                 <div class="section-box">
                     <div class="section-header">
                         <div class="section-title">
                             <span class="icon">🔍</span>
-                            رابعاً: معاينة وتجهيزات المركبة عند التسليم
+                            رابعاً: مخطط المعاينة والتجهيزات عند الاستلام
                         </div>
                     </div>
 
-                    <div class="checklist-grid">
-                        <div class="check-item">
-                            مستوى الوقود
-                            <span class="status">مملوء ⛽</span>
+                    <div class="inspection-box">
+                        <div class="diagram-container">
+                            <span style="font-size: 10px; font-weight: 700; color: #475569;">مخطط معاينة هيكل المركبة (الكاروسري)</span>
+                            <div class="car-diagram-grid">
+                                <div class="diagram-spot">المصد الأمامي <span class="mark">سليم ✔️</span></div>
+                                <div class="diagram-spot">المصد الخلفي <span class="mark">سليم ✔️</span></div>
+                                <div class="diagram-spot">الجانب الأيمن <span class="mark">سليم ✔️</span></div>
+                                <div class="diagram-spot">الجانب الأيسر <span class="mark">سليم ✔️</span></div>
+                                <div class="diagram-spot">السقف والزجاج <span class="mark">سليم ✔️</span></div>
+                                <div class="diagram-spot">الإطارات <span class="mark">ممتازة ✔️</span></div>
+                            </div>
                         </div>
-                        <div class="check-item">
-                            عجلة احتياطية
-                            <span class="status">موجودة ✔️</span>
+
+                        <div class="checklist-grid">
+                            <div class="check-item">
+                                مستوى الوقود
+                                <span class="status">مملوء ⛽</span>
+                            </div>
+                            <div class="check-item">
+                                عجلة احتياطية
+                                <span class="status">موجودة ✔️</span>
+                            </div>
+                            <div class="check-item">
+                                رافعة ومفتاح
+                                <span class="status">موجودة ✔️</span>
+                            </div>
+                            <div class="check-item">
+                                وثائق السيارة
+                                <span class="status">كاملة 📁</span>
+                            </div>
                         </div>
-                        <div class="check-item">
-                            رافعة ومفتاح
-                            <span class="status">موجودة ✔️</span>
-                        </div>
-                        <div class="check-item">
-                            وثائق السيارة
-                            <span class="status">كاملة 📁</span>
-                        </div>
-                        <div class="check-item">
-                            نظافة المركبة
-                            <span class="status">ممتازة ✨</span>
-                        </div>
+                    </div>
+
+                    <div class="handover-sign-box">
+                        <div class="handover-sign-item">إقرار المعاينة: عاينت المركبة ووجدتها خالية من الأضرار وقت الاستلام</div>
+                        <div class="handover-sign-item">توقيع المستأجر المبدئي: .........................</div>
                     </div>
                 </div>
             </div>
 
             <!-- Page 1 Footer -->
             <div class="page-footer">
-                <span>واحد أوتو لكراء السيارات - جيجل | هاتف: 0550000000</span>
+                <span>واحد أوتو لكراء السيارات - بازول، جيجل | هاتف: 0550000000</span>
                 <span>صفحة 1 من 2</span>
             </div>
         </div>
@@ -748,7 +831,7 @@ export function printRentalAgreement(rental, car, customer) {
                         <div class="condition-card alert">
                             <div class="condition-num">1</div>
                             <div class="condition-text">
-                                <strong>السرية وعدم التصريح الإيجاري:</strong> يمنع منعًا باتًا التصريح بأن السيارة مؤجرة أو مستأجرة أمام أي جهة كانت، وتعتبر المركبة مخصصة للاستعمال الشخصي الفردي فقط.
+                                <strong>السرية وعدم التصريح الإيجاري:</strong> يمنع منعًا باتًا التصريح بأن السيارة مؤجرة أو مستأجرة أمام أي جهة رسمية أو غير رسمية، وتعتبر المركبة مخصصة للاستعمال الشخصي الفردي فقط.
                             </div>
                         </div>
 
@@ -762,21 +845,21 @@ export function printRentalAgreement(rental, car, customer) {
                         <div class="condition-card alert">
                             <div class="condition-num">3</div>
                             <div class="condition-text">
-                                <strong>مسؤولية هيكل السيارة (الكاروسري):</strong> هيكل السيارة الخارجي يقع تحت **مسؤولية المستأجر بالكامل**. أي خدش، انبعاج، أضرار في الدهان، أو كسور في الزجاج والمرايا يتحمل المستأجر تكاليف إصلاحها كاملة.
+                                <strong>مسؤولية هيكل السيارة (الكاروسري):</strong> هيكل السيارة الخارجي يقع تحت <strong>مسؤولية المستأجر بالكامل</strong>. أي خدش، انبعاج، أضرار في الدهان، أو كسور في الزجاج والمرايا يتحمل المستأجر تكاليف إصلاحها كاملة.
                             </div>
                         </div>
 
                         <div class="condition-card alert">
                             <div class="condition-num">4</div>
                             <div class="condition-text">
-                                <strong>الأعطال الميكانيكية وسوء استخدام السائق:</strong> المحرك والعلبة الميكانيكية مسؤولية المؤجر في حالة التلف الطبيعي. أما **الأعطال الناتجة عن سوء الاستخدام** (كالقيادة بدون زيت/ماء، السرعة المفرطة، أو السير في الطرق غير المعبدة) فتقع على المستأجر.
+                                <strong>الأعطال الميكانيكية وسوء استخدام السائق:</strong> المحرك والعلبة الميكانيكية مسؤولية المؤجر في حالة التلف الطبيعي. أما <strong>الأعطال الناتجة عن سوء الاستخدام</strong> (كالقيادة بدون زيت/ماء، السرعة المفرطة، أو السير في الطرق غير المعبدة) فتقع على المستأجر.
                             </div>
                         </div>
 
                         <div class="condition-card">
                             <div class="condition-num">5</div>
                             <div class="condition-text">
-                                <strong>نسخة الوثائق الرسمية:</strong> يلتزم المستأجر بتقديم نسخة طبق الأصل من **رخصة السياقة الصالحة وبطاقة التعريف الوطنية**، والتي تبقى محفوظة في أرشيف المعرض طيلة مدة العقد.
+                                <strong>نسخة الوثائق الرسمية:</strong> يلتزم المستأجر بتقديم نسخة طبق الأصل من <strong>رخصة السياقة الصالحة وبطاقة التعريف الوطنية</strong>، والتي تبقى محفوظة في أرشيف المعرض طيلة مدة العقد.
                             </div>
                         </div>
 
@@ -790,7 +873,7 @@ export function printRentalAgreement(rental, car, customer) {
                         <div class="condition-card">
                             <div class="condition-num">7</div>
                             <div class="condition-text">
-                                <strong>مواعيد التأخير والإرجاع:</strong> يتعهد المستأجر بإعادة المركبة في الوقت والتاريخ المحددين. أي تأخير يتجاوز ساعتين دون إذن رسمي يُحسب كـ **يوم إيجار كامل إضافي**.
+                                <strong>مواعيد التأخير والإرجاع:</strong> يتعهد المستأجر بإعادة المركبة في الوقت والتاريخ المحددين. أي تأخير يتجاوز ساعتين دون إذن رسمي يُحسب كـ <strong>يوم إيجار كامل إضافي</strong>.
                             </div>
                         </div>
 
