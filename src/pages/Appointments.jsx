@@ -25,7 +25,8 @@ export default function Appointments() {
     const [customerData, setCustomerData] = useState({ name: '', phone: '', address: '', national_id: '' });
     const [appointmentData, setAppointmentData] = useState({
         carId: '',
-        date: '',
+        startDate: '',
+        endDate: '',
         time: '',
         status: 'Scheduled',
         notes: ''
@@ -94,7 +95,7 @@ export default function Appointments() {
         }
 
         setLoadingSchedule(true);
-        // Fetch active/future rentals for car
+        // Fetch active rentals for car
         const { data: rentals } = await supabase
             .from('rentals')
             .select('id, car_id, start_date, end_date, status, cars(make, model)')
@@ -102,10 +103,10 @@ export default function Appointments() {
             .eq('status', 'Active')
             .order('start_date', { ascending: true });
 
-        // Fetch future/scheduled appointments for car
+        // Fetch scheduled appointments for car
         const { data: appointments } = await supabase
             .from('rental_appointments')
-            .select('id, car_id, appointment_date, appointment_time, status, customers(name)')
+            .select('id, car_id, appointment_date, end_date, appointment_time, status, customers(name)')
             .eq('car_id', carId)
             .eq('status', 'Scheduled')
             .order('appointment_date', { ascending: true });
@@ -118,12 +119,14 @@ export default function Appointments() {
     };
 
     const openNewModal = () => {
+        const todayStr = new Date().toISOString().split('T')[0];
         setEditingAppointment(null);
         setSelectedCustomerId('new');
         setCustomerData({ name: '', phone: '', address: '', national_id: '' });
         setAppointmentData({
             carId: '',
-            date: new Date().toISOString().split('T')[0],
+            startDate: todayStr,
+            endDate: todayStr,
             time: '10:00',
             status: 'Scheduled',
             notes: ''
@@ -143,7 +146,8 @@ export default function Appointments() {
         });
         setAppointmentData({
             carId: apt.car_id || '',
-            date: apt.appointment_date,
+            startDate: apt.appointment_date,
+            endDate: apt.end_date || apt.appointment_date,
             time: apt.appointment_time,
             status: apt.status,
             notes: apt.notes || ''
@@ -169,21 +173,26 @@ export default function Appointments() {
         navigate('/rentals', { state: { createRentalFromAppointment: apt } });
     };
 
-    // Validation helper to check if a chosen date is unavailable
-    const isDateUnavailable = (dateStr, carId) => {
-        if (!dateStr || !carId) return false;
+    // Validation helper to check if a chosen date range overlaps with existing rentals or appointments
+    const isRangeUnavailable = (startDateStr, endDateStr, carId) => {
+        if (!startDateStr || !carId) return false;
+        const endStr = endDateStr || startDateStr;
 
-        // Check if date falls in active rental
+        // Check active rentals
         const isRented = carSchedule.rentals.some(r => {
             if (r.status !== 'Active') return false;
-            return dateStr >= r.start_date && dateStr <= r.end_date;
+            // Overlap check: start1 <= end2 && end1 >= start2
+            return startDateStr <= r.end_date && endStr >= r.start_date;
         });
 
-        // Check if date matches another scheduled appointment
+        // Check scheduled appointments
         const isBooked = carSchedule.appointments.some(a => {
             if (a.status !== 'Scheduled') return false;
             if (editingAppointment && a.id === editingAppointment.id) return false;
-            return a.appointment_date === dateStr;
+            
+            const aStart = a.appointment_date;
+            const aEnd = a.end_date || a.appointment_date;
+            return startDateStr <= aEnd && endStr >= aStart;
         });
 
         return isRented || isBooked;
@@ -192,9 +201,17 @@ export default function Appointments() {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        // Validate date availability if car is selected
-        if (appointmentData.carId && isDateUnavailable(appointmentData.date, appointmentData.carId)) {
-            alert('⚠️ The selected date is unavailable for this vehicle! Please select an available (Green) date on the calendar.');
+        const startDate = appointmentData.startDate;
+        const endDate = appointmentData.endDate || startDate;
+
+        if (endDate < startDate) {
+            alert('⚠️ End date cannot be before start date!');
+            return;
+        }
+
+        // Validate date range availability if car is selected
+        if (appointmentData.carId && isRangeUnavailable(startDate, endDate, appointmentData.carId)) {
+            alert('⚠️ The selected date range is unavailable for this vehicle! Please select available (Green) dates on the calendar.');
             return;
         }
 
@@ -221,7 +238,8 @@ export default function Appointments() {
             const payload = {
                 customer_id: finalCustomerId,
                 car_id: appointmentData.carId || null,
-                appointment_date: appointmentData.date,
+                appointment_date: startDate,
+                end_date: endDate,
                 appointment_time: appointmentData.time,
                 status: appointmentData.status,
                 notes: appointmentData.notes
@@ -265,7 +283,7 @@ export default function Appointments() {
                 <div className="flex flex-wrap items-center justify-between gap-4">
                     <div>
                         <h2 className="text-2xl font-bold text-white">Rental Appointments</h2>
-                        <p className="text-xs text-slate-400 mt-1">Manage viewings, test drives, and vehicle bookings</p>
+                        <p className="text-xs text-slate-400 mt-1">Manage viewings, test drives, and multi-day vehicle bookings</p>
                     </div>
 
                     <div className="flex items-center gap-3">
@@ -317,7 +335,7 @@ export default function Appointments() {
 
                             <p className="text-xs text-slate-400">
                                 🟢 <strong className="text-emerald-400">Green</strong> = Available &nbsp;|&nbsp; 
-                                🔴 <strong className="text-red-400">Red</strong> = Rented / Booked (Disabled)
+                                🔴 <strong className="text-red-400">Red</strong> = Rented / Booked Range (Disabled)
                             </p>
                         </div>
 
@@ -339,7 +357,7 @@ export default function Appointments() {
                             <table className="w-full text-left">
                                 <thead>
                                     <tr className="border-b border-slate-800/50">
-                                        <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Date & Time</th>
+                                        <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Date Range & Time</th>
                                         <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Customer</th>
                                         <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Requested Vehicle</th>
                                         <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
@@ -347,39 +365,48 @@ export default function Appointments() {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-800/30">
-                                    {appointments.map(apt => (
-                                        <tr key={apt.id} className="hover:bg-slate-800/20 transition-colors">
-                                            <td className="px-6 py-4">
-                                                <div className="font-medium text-white text-sm">{new Date(apt.appointment_date).toLocaleDateString()}</div>
-                                                <div className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
-                                                    <Clock size={12} /> {apt.appointment_time.slice(0, 5)}
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <div className="font-medium text-white text-sm">{apt.customers?.name}</div>
-                                                <div className="text-xs text-slate-400">{apt.customers?.phone}</div>
-                                            </td>
-                                            <td className="px-6 py-4 text-sm text-slate-300">
-                                                {apt.car_id ? `${apt.cars?.year} ${apt.cars?.make} ${apt.cars?.model}` : <span className="text-slate-500 italic">Not decided</span>}
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <span className={`px-2.5 py-1 rounded-lg text-xs font-bold ${getStatusStyles(apt.status)}`}>
-                                                    {apt.status}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 text-right">
-                                                <div className="flex justify-end gap-2">
-                                                    {apt.status === 'Scheduled' && (
-                                                        <>
-                                                            <Button size="sm" variant="ghost" onClick={() => convertToRental(apt)} icon={ArrowRight} className="text-emerald-400 hover:text-emerald-300 hover:bg-emerald-400/10">Convert to Rental</Button>
-                                                            <Button size="sm" variant="ghost" onClick={() => updateStatus(apt.id, 'No Show')} icon={XCircle} className="text-orange-400 hover:text-orange-300 hover:bg-orange-400/10" />
-                                                        </>
-                                                    )}
-                                                    <Button size="sm" variant="ghost" onClick={() => openEditModal(apt)} icon={Pencil} />
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
+                                    {appointments.map(apt => {
+                                        const startDateFormatted = new Date(apt.appointment_date).toLocaleDateString();
+                                        const endDateFormatted = apt.end_date && apt.end_date !== apt.appointment_date 
+                                            ? new Date(apt.end_date).toLocaleDateString() 
+                                            : null;
+
+                                        return (
+                                            <tr key={apt.id} className="hover:bg-slate-800/20 transition-colors">
+                                                <td className="px-6 py-4">
+                                                    <div className="font-medium text-white text-sm">
+                                                        {startDateFormatted} {endDateFormatted ? ` → ${endDateFormatted}` : ''}
+                                                    </div>
+                                                    <div className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
+                                                        <Clock size={12} /> {apt.appointment_time.slice(0, 5)}
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className="font-medium text-white text-sm">{apt.customers?.name}</div>
+                                                    <div className="text-xs text-slate-400">{apt.customers?.phone}</div>
+                                                </td>
+                                                <td className="px-6 py-4 text-sm text-slate-300">
+                                                    {apt.car_id ? `${apt.cars?.year} ${apt.cars?.make} ${apt.cars?.model}` : <span className="text-slate-500 italic">Not decided</span>}
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <span className={`px-2.5 py-1 rounded-lg text-xs font-bold ${getStatusStyles(apt.status)}`}>
+                                                        {apt.status}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4 text-right">
+                                                    <div className="flex justify-end gap-2">
+                                                        {apt.status === 'Scheduled' && (
+                                                            <>
+                                                                <Button size="sm" variant="ghost" onClick={() => convertToRental(apt)} icon={ArrowRight} className="text-emerald-400 hover:text-emerald-300 hover:bg-emerald-400/10">Convert to Rental</Button>
+                                                                <Button size="sm" variant="ghost" onClick={() => updateStatus(apt.id, 'No Show')} icon={XCircle} className="text-orange-400 hover:text-orange-300 hover:bg-orange-400/10" />
+                                                            </>
+                                                        )}
+                                                        <Button size="sm" variant="ghost" onClick={() => openEditModal(apt)} icon={Pencil} />
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
                                     {appointments.length === 0 && (
                                         <tr>
                                             <td colSpan="5" className="px-6 py-16 text-center text-slate-600">No appointments scheduled.</td>
@@ -438,7 +465,7 @@ export default function Appointments() {
                                 {/* Appointment Details */}
                                 <div>
                                     <h3 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
-                                        <CalendarIcon size={16} className="text-brand-400" /> Appointment Date & Time
+                                        <CalendarIcon size={16} className="text-brand-400" /> Appointment Date Range & Time
                                     </h3>
 
                                     <div className="mb-4">
@@ -459,19 +486,40 @@ export default function Appointments() {
                                     <div className="grid grid-cols-2 gap-4 mb-4">
                                         <div>
                                             <Input 
-                                                label="Date" 
+                                                label="Start Date" 
                                                 type="date" 
-                                                value={appointmentData.date} 
-                                                onChange={e => setAppointmentData({ ...appointmentData, date: e.target.value })} 
+                                                value={appointmentData.startDate} 
+                                                onChange={e => {
+                                                    const newStart = e.target.value;
+                                                    setAppointmentData(prev => ({
+                                                        ...prev,
+                                                        startDate: newStart,
+                                                        endDate: prev.endDate < newStart ? newStart : prev.endDate
+                                                    }));
+                                                }} 
                                                 required 
                                             />
-                                            {appointmentData.carId && isDateUnavailable(appointmentData.date, appointmentData.carId) && (
-                                                <p className="text-[11px] text-red-400 font-semibold mt-1 flex items-center gap-1">
-                                                    <AlertCircle size={12} /> Date is unavailable! Pick a green date.
-                                                </p>
-                                            )}
                                         </div>
-                                        <Input label="Time" type="time" value={appointmentData.time} onChange={e => setAppointmentData({ ...appointmentData, time: e.target.value })} required />
+
+                                        <div>
+                                            <Input 
+                                                label="End Date" 
+                                                type="date" 
+                                                value={appointmentData.endDate || appointmentData.startDate} 
+                                                onChange={e => setAppointmentData(prev => ({ ...prev, endDate: e.target.value }))} 
+                                                required 
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {appointmentData.carId && isRangeUnavailable(appointmentData.startDate, appointmentData.endDate, appointmentData.carId) && (
+                                        <div className="mb-4 p-3 rounded-xl bg-red-500/10 border border-red-500/30 flex items-center gap-2 text-xs text-red-400 font-semibold">
+                                            <AlertCircle size={14} /> Selected date range is unavailable! Select clear green dates.
+                                        </div>
+                                    )}
+
+                                    <div className="mb-4">
+                                        <Input label="Pickup / Appointment Time" type="time" value={appointmentData.time} onChange={e => setAppointmentData({ ...appointmentData, time: e.target.value })} required />
                                     </div>
 
                                     {editingAppointment && (
@@ -507,12 +555,12 @@ export default function Appointments() {
                                 <div>
                                     <h3 className="text-sm font-bold text-white mb-2 flex items-center justify-between">
                                         <span className="flex items-center gap-2">
-                                            <CalendarIcon size={16} className="text-emerald-400" /> Interactive Availability Calendar
+                                            <CalendarIcon size={16} className="text-emerald-400" /> Interactive Date Range Calendar
                                         </span>
-                                        <span className="text-[11px] text-emerald-400 font-normal">Click a green date to select</span>
+                                        <span className="text-[11px] text-emerald-400 font-normal">Click Start & End date</span>
                                     </h3>
                                     <p className="text-xs text-slate-400 mb-3">
-                                        Dates highlighted in <strong className="text-emerald-400">Green</strong> are available. Dates in <strong className="text-red-400">Red</strong> are rented or already booked and <span className="underline">cannot be clicked</span>.
+                                        Dates highlighted in <strong className="text-emerald-400">Green</strong> are available. Dates in <strong className="text-red-400">Red</strong> are rented or booked and <span className="underline">cannot be clicked</span>.
                                     </p>
                                 </div>
 
@@ -522,8 +570,15 @@ export default function Appointments() {
                                     rentals={carSchedule.rentals}
                                     appointments={carSchedule.appointments}
                                     currentAppointmentId={editingAppointment?.id}
-                                    selectedDate={appointmentData.date}
-                                    onSelectDate={(dayStr) => setAppointmentData(prev => ({ ...prev, date: dayStr }))}
+                                    startDate={appointmentData.startDate}
+                                    endDate={appointmentData.endDate}
+                                    onSelectRange={(startStr, endStr) => {
+                                        setAppointmentData(prev => ({
+                                            ...prev,
+                                            startDate: startStr,
+                                            endDate: endStr
+                                        }));
+                                    }}
                                 />
                             </div>
 

@@ -10,11 +10,10 @@ import {
     endOfWeek, 
     eachDayOfInterval, 
     isSameMonth, 
-    isSameDay, 
     isToday, 
-    parseISO, 
     isBefore,
-    startOfDay
+    startOfDay,
+    addDays
 } from 'date-fns';
 
 export default function AvailabilityCalendar({
@@ -23,8 +22,9 @@ export default function AvailabilityCalendar({
     rentals = [],
     appointments = [],
     currentAppointmentId = null,
-    selectedDate = '',
-    onSelectDate,
+    startDate: selectedStartDate = '',
+    endDate: selectedEndDate = '',
+    onSelectRange,
     viewOnly = false,
     onAppointmentClick
 }) {
@@ -62,13 +62,15 @@ export default function AvailabilityCalendar({
             return dayStr >= start && dayStr <= end;
         });
 
-        // Find scheduled appointments on this date
+        // Find scheduled appointments overlapping with this date range
         const matchingAppointment = appointments.find(a => {
             if (a.status !== 'Scheduled') return false;
             if (currentAppointmentId && a.id === currentAppointmentId) return false;
             if (selectedCarId && a.car_id !== selectedCarId) return false;
             
-            return a.appointment_date === dayStr;
+            const aptStart = a.appointment_date;
+            const aptEnd = a.end_date || a.appointment_date;
+            return dayStr >= aptStart && dayStr <= aptEnd;
         });
 
         if (matchingRental) {
@@ -85,7 +87,7 @@ export default function AvailabilityCalendar({
             return {
                 isAvailable: false,
                 reason: 'Booked Appointment',
-                details: `Appointment scheduled at ${matchingAppointment.appointment_time?.slice(0, 5) || ''}`,
+                details: `Appointment from ${matchingAppointment.appointment_date} to ${matchingAppointment.end_date || matchingAppointment.appointment_date} (${matchingAppointment.appointment_time?.slice(0, 5) || ''})`,
                 type: 'appointment',
                 item: matchingAppointment
             };
@@ -97,6 +99,43 @@ export default function AvailabilityCalendar({
             details: isPast ? 'Date has passed' : 'Date is available for appointment',
             type: isPast ? 'past' : 'available'
         };
+    };
+
+    // Helper to check if an entire range [startStr, endStr] is free of rentals & appointments
+    const isRangeFullyAvailable = (startStr, endStr) => {
+        let current = new Date(startStr);
+        const end = new Date(endStr);
+
+        while (current <= end) {
+            const status = getDateStatus(current);
+            if (!status.isAvailable) return false;
+            current = addDays(current, 1);
+        }
+        return true;
+    };
+
+    // Handle date click for range selection
+    const handleDayClick = (dayStr) => {
+        if (!onSelectRange) return;
+
+        // If no start date selected, or user already selected a range, start a new range
+        if (!selectedStartDate || (selectedStartDate && selectedEndDate && selectedStartDate !== selectedEndDate)) {
+            onSelectRange(dayStr, dayStr);
+            return;
+        }
+
+        // If clicking a date on or after the start date
+        if (dayStr >= selectedStartDate) {
+            if (isRangeFullyAvailable(selectedStartDate, dayStr)) {
+                onSelectRange(selectedStartDate, dayStr);
+            } else {
+                alert('⚠️ Selected range overlaps with an existing rental or appointment! Please select a clear range.');
+                onSelectRange(dayStr, dayStr);
+            }
+        } else {
+            // Clicking a date before start date resets start date
+            onSelectRange(dayStr, dayStr);
+        }
     };
 
     return (
@@ -139,7 +178,6 @@ export default function AvailabilityCalendar({
                         type="button"
                         onClick={nextMonth}
                         className="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 transition-colors"
-                        title="Next Month"
                     >
                         <ChevronRight size={18} />
                     </button>
@@ -158,9 +196,16 @@ export default function AvailabilityCalendar({
                 </div>
                 <div className="flex items-center gap-1.5">
                     <span className="w-3 h-3 rounded-full bg-blue-500 shadow-sm shadow-blue-500/50"></span>
-                    <span className="text-blue-400 font-medium">Selected Date</span>
+                    <span className="text-blue-400 font-medium">Selected Date Range</span>
                 </div>
             </div>
+
+            {/* Instructions Tip */}
+            {!viewOnly && (
+                <div className="mb-3 text-[11px] text-slate-400 flex items-center justify-between bg-slate-800/30 px-3 py-1.5 rounded-lg border border-slate-700/40">
+                    <span>💡 <strong>Tip:</strong> Click a green date for Start Date, then click a second green date for End Date.</span>
+                </div>
+            )}
 
             {/* Days of Week Header */}
             <div className="grid grid-cols-7 gap-1 mb-2 text-center">
@@ -177,16 +222,24 @@ export default function AvailabilityCalendar({
                     const dayStr = formatDateKey(day);
                     const isCurrentMonth = isSameMonth(day, monthStart);
                     const status = getDateStatus(day);
-                    const isSelected = selectedDate === dayStr;
                     const isTodayDate = isToday(day);
+
+                    const isStart = selectedStartDate === dayStr;
+                    const isEnd = selectedEndDate === dayStr;
+                    const isInRange = selectedStartDate && selectedEndDate && dayStr >= selectedStartDate && dayStr <= selectedEndDate;
 
                     // Styling logic
                     let cellBg = 'bg-slate-900/40 text-slate-600 border-slate-800/30';
                     let statusBadge = null;
 
                     if (isCurrentMonth) {
-                        if (isSelected) {
-                            cellBg = 'bg-blue-600 border-blue-400 text-white font-bold shadow-lg shadow-blue-600/30 scale-105 z-10';
+                        if (isInRange) {
+                            if (isStart || isEnd) {
+                                cellBg = 'bg-blue-600 border-blue-400 text-white font-bold shadow-lg shadow-blue-600/30 scale-105 z-10';
+                            } else {
+                                cellBg = 'bg-blue-600/60 border-blue-500/50 text-white font-semibold z-0';
+                            }
+                            statusBadge = <span className="text-[9px] font-bold text-blue-100 block">{isStart && isEnd ? 'Selected' : isStart ? 'Start' : isEnd ? 'End' : 'In Range'}</span>;
                         } else if (!status.isAvailable) {
                             // RED UNAVAILABLE - DISABLED
                             cellBg = 'bg-red-950/40 border-red-500/30 text-red-400/80 cursor-not-allowed opacity-75';
@@ -215,19 +268,19 @@ export default function AvailabilityCalendar({
                             onClick={() => {
                                 if (viewOnly && status.type === 'appointment' && onAppointmentClick) {
                                     onAppointmentClick(status.item);
-                                } else if (status.isAvailable && onSelectDate) {
-                                    onSelectDate(dayStr);
+                                } else if (status.isAvailable) {
+                                    handleDayClick(dayStr);
                                 }
                             }}
                             className={`
                                 relative min-h-[52px] p-1.5 rounded-xl border flex flex-col justify-between text-left transition-all duration-200
                                 ${cellBg}
-                                ${isTodayDate && !isSelected ? 'ring-1 ring-brand-400/80' : ''}
+                                ${isTodayDate && !isInRange ? 'ring-1 ring-brand-400/80' : ''}
                             `}
                             title={`${dayStr}: ${status.details}`}
                         >
                             <div className="flex items-center justify-between w-full">
-                                <span className={`text-xs ${isSelected ? 'font-black text-white' : 'font-semibold'}`}>
+                                <span className={`text-xs ${isInRange ? 'font-black text-white' : 'font-semibold'}`}>
                                     {format(day, 'd')}
                                 </span>
                                 {isTodayDate && (
@@ -243,13 +296,13 @@ export default function AvailabilityCalendar({
                 })}
             </div>
 
-            {/* Selected Date Indicator / Notice */}
-            {selectedDate && (
+            {/* Selected Date Range Indicator / Notice */}
+            {selectedStartDate && (
                 <div className="mt-4 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-between">
                     <div className="flex items-center gap-2">
                         <CheckCircle2 size={16} className="text-emerald-400" />
                         <span className="text-xs text-emerald-300 font-medium">
-                            Selected Date: <strong className="text-white">{selectedDate}</strong> (Available)
+                            Selected Date Range: <strong className="text-white">{selectedStartDate}</strong> {selectedEndDate && selectedEndDate !== selectedStartDate ? `to ${selectedEndDate}` : ''} (Available)
                         </span>
                     </div>
                 </div>

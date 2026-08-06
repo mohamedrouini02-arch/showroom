@@ -137,6 +137,7 @@ CREATE TABLE public.rental_appointments (
     customer_id UUID REFERENCES public.customers(id) ON DELETE CASCADE,
     car_id UUID REFERENCES public.cars(id) ON DELETE SET NULL,
     appointment_date DATE NOT NULL,
+    end_date DATE,
     appointment_time TIME NOT NULL,
     status TEXT DEFAULT 'Scheduled'
         CHECK (status IN ('Scheduled', 'Completed', 'Cancelled', 'No Show')),
