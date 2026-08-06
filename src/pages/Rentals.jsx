@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Key, CheckCircle, FileText, Pencil, Car, User, Calendar, Clock, Gauge } from 'lucide-react';
+import { Plus, Key, CheckCircle, FileText, Pencil, Car, User, Calendar as CalendarIcon, Clock, Gauge, AlertCircle } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { Button, Modal, Input, Select } from '../components/ui';
 import { supabase } from '../lib/supabase';
 import { printRentalAgreement } from '../components/RentalAgreement';
+import AvailabilityCalendar from '../components/AvailabilityCalendar';
 
 export default function Rentals() {
     const [rentals, setRentals] = useState([]);
@@ -21,6 +22,7 @@ export default function Rentals() {
     // Data for dropdowns
     const [availableCars, setAvailableCars] = useState([]);
     const [existingCustomers, setExistingCustomers] = useState([]);
+    const [carSchedule, setCarSchedule] = useState({ rentals: [], appointments: [] });
 
     // Form State - car selection
     const [selectedCarId, setSelectedCarId] = useState('');
@@ -34,7 +36,7 @@ export default function Rentals() {
 
     // Form State - rental details
     const [rentData, setRentData] = useState({
-        startDate: '', endDate: '', dailyRate: '', mileageOut: '', pickupTime: ''
+        startDate: '', endDate: '', dailyRate: '', mileageOut: '', pickupTime: '10:00'
     });
 
     useEffect(() => {
@@ -58,24 +60,14 @@ export default function Rentals() {
             
             setRentData({
                 startDate: apt.appointment_date || '',
-                endDate: '',
-                dailyRate: '',
+                endDate: apt.end_date || apt.appointment_date || '',
+                dailyRate: 7000,
                 mileageOut: '',
-                pickupTime: apt.appointment_time || ''
+                pickupTime: apt.appointment_time || '10:00'
             });
 
             if (apt.car_id) {
-                setSelectedCarId(apt.car_id);
-                supabase.from('cars').select('*').eq('id', apt.car_id).single().then(({data}) => {
-                    if (data) {
-                        setSelectedCar(data);
-                        setRentData(prev => ({
-                            ...prev,
-                            dailyRate: prev.dailyRate || 7000,
-                            mileageOut: data.mileage || ''
-                        }));
-                    }
-                });
+                handleCarSelect(apt.car_id);
             } else {
                 setSelectedCarId('');
                 setSelectedCar(null);
@@ -111,7 +103,7 @@ export default function Rentals() {
         setAvailableCars(cars || []);
     };
 
-    const handleCarSelect = (carId) => {
+    const handleCarSelect = async (carId) => {
         const car = availableCars.find(c => c.id === carId);
         setSelectedCarId(carId);
         setSelectedCar(car);
@@ -121,6 +113,29 @@ export default function Rentals() {
                 dailyRate: prev.dailyRate || 7000,
                 mileageOut: car.mileage || ''
             }));
+        }
+
+        if (carId) {
+            // Fetch active rentals for car
+            const { data: rentalsData } = await supabase
+                .from('rentals')
+                .select('id, car_id, start_date, end_date, status, cars(make, model)')
+                .eq('car_id', carId)
+                .eq('status', 'Active');
+
+            // Fetch scheduled appointments for car
+            const { data: appointmentsData } = await supabase
+                .from('rental_appointments')
+                .select('*, customers(name)')
+                .eq('car_id', carId)
+                .eq('status', 'Scheduled');
+
+            setCarSchedule({
+                rentals: rentalsData || [],
+                appointments: appointmentsData || []
+            });
+        } else {
+            setCarSchedule({ rentals: [], appointments: [] });
         }
     };
 
@@ -143,13 +158,15 @@ export default function Rentals() {
     };
 
     const openNewRentalModal = () => {
+        const todayStr = new Date().toISOString().split('T')[0];
         setEditingRental(null);
         setSelectedCarId('');
         setSelectedCar(null);
         setSelectedCustomerId('new');
         setCustomerData({ name: '', phone: '', address: '', national_id: '' });
-        setRentData({ startDate: '', endDate: '', dailyRate: '', mileageOut: '', pickupTime: '' });
+        setRentData({ startDate: todayStr, endDate: todayStr, dailyRate: '7000', mileageOut: '', pickupTime: '10:00' });
         setLinkedAppointmentId(null);
+        setCarSchedule({ rentals: [], appointments: [] });
         setIsRentModalOpen(true);
     };
 
@@ -168,25 +185,53 @@ export default function Rentals() {
             endDate: rental.end_date || '',
             dailyRate: rental.daily_rate || '',
             mileageOut: rental.mileage_out || '',
-            pickupTime: rental.pickup_time || ''
+            pickupTime: rental.pickup_time || '10:00'
         });
+
+        if (rental.car_id) {
+            handleCarSelect(rental.car_id);
+        }
         setIsRentModalOpen(true);
+    };
+
+    // Helper to check range overlap
+    const isRangeUnavailable = (startDateStr, endDateStr, carId) => {
+        if (!startDateStr || !carId) return false;
+        const endStr = endDateStr || startDateStr;
+
+        // Check active rentals (ignoring current rental if editing)
+        const isRented = carSchedule.rentals.some(r => {
+            if (r.status !== 'Active') return false;
+            if (editingRental && r.id === editingRental.id) return false;
+            return startDateStr <= r.end_date && endStr >= r.start_date;
+        });
+
+        return isRented;
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
 
+        if (rentData.endDate < rentData.startDate) {
+            alert('⚠️ End date cannot be before start date!');
+            return;
+        }
+
+        if (selectedCarId && isRangeUnavailable(rentData.startDate, rentData.endDate, selectedCarId)) {
+            alert('⚠️ Selected date range overlaps with an existing rental! Please select clear green dates on the calendar.');
+            return;
+        }
+
         try {
             const start = new Date(rentData.startDate);
             const end = new Date(rentData.endDate);
-            const diffDays = Math.ceil(Math.abs(end - start) / (1000 * 60 * 60 * 24));
+            const diffDays = Math.max(1, Math.ceil(Math.abs(end - start) / (1000 * 60 * 60 * 24)));
             const totalCost = diffDays * Number(rentData.dailyRate);
 
             let finalCustomerId = null;
 
             if (editingRental) {
                 // Update existing rental
-                // Update customer info
                 if (editingRental.customer_id) {
                     await supabase.from('customers').update({
                         name: customerData.name,
@@ -208,7 +253,6 @@ export default function Rentals() {
                 if (error) throw error;
             } else {
                 if (selectedCustomerId && selectedCustomerId !== 'new') {
-                    // Update existing customer info just in case they changed it
                     await supabase.from('customers').update({
                         name: customerData.name,
                         phone: customerData.phone,
@@ -217,7 +261,6 @@ export default function Rentals() {
                     }).eq('id', selectedCustomerId);
                     finalCustomerId = selectedCustomerId;
                 } else {
-                    // Create customer first
                     const { data: newCustomer, error: custError } = await supabase
                         .from('customers')
                         .insert([{
@@ -251,7 +294,6 @@ export default function Rentals() {
                 // Update car status
                 await supabase.from('cars').update({ status: 'Rented' }).eq('id', selectedCarId);
                 
-                // If this rental was created from an appointment, mark appointment as Completed
                 if (linkedAppointmentId) {
                     await supabase.from('rental_appointments').update({ status: 'Completed' }).eq('id', linkedAppointmentId);
                     setLinkedAppointmentId(null);
@@ -279,45 +321,40 @@ export default function Rentals() {
         
         const start = new Date(rentalToReturn.start_date);
         const end = new Date(rentalToReturn.end_date);
-        const diffDays = Math.max(1, Math.ceil(Math.abs(end - start) / (1000 * 60 * 60 * 24)));
-        const allowedMileage = diffDays * 400;
+        const days = Math.max(1, Math.ceil(Math.abs(end - start) / (1000 * 60 * 60 * 24)));
+        const allowedKM = days * 400; // 400 KM per day limit
         
-        const startMileage = rentalToReturn.mileage_out || rentalToReturn.cars?.mileage || 0;
-        const currentMileage = Number(returnMileage);
-        
-        const distanceDriven = Math.max(0, currentMileage - startMileage);
-        const excess = Math.max(0, distanceDriven - allowedMileage);
-        
-        return { 
-            driven: distanceDriven,
-            allowed: allowedMileage,
-            excess: excess, 
-            cost: excess * 15 
-        };
+        const startKM = Number(rentalToReturn.mileage_out || rentalToReturn.cars?.mileage || 0);
+        const endKM = Number(returnMileage);
+        const driven = Math.max(0, endKM - startKM);
+        const excess = Math.max(0, driven - allowedKM);
+        const cost = excess * 15; // 15 DA per extra KM
+
+        return { driven, allowed: allowedKM, excess, cost };
     };
 
-    const submitReturn = async (e) => {
-        e.preventDefault();
-        try {
-            const { cost: extraCost } = calculateExtraCost();
-            const finalCost = (rentalToReturn.total_cost || 0) + extraCost;
+    const handleConfirmReturn = async () => {
+        if (!rentalToReturn) return;
 
-            await supabase.from('rentals').update({ 
-                status: 'Returned', 
-                returned_at: new Date().toISOString(),
-                total_cost: finalCost
-            }).eq('id', rentalToReturn.id);
-            
-            const updatePayload = { status: 'Available' };
-            if (returnMileage) {
-                updatePayload.mileage = Number(returnMileage);
-            }
-            
-            await supabase.from('cars').update(updatePayload).eq('id', rentalToReturn.car_id);
-            
+        try {
+            const { error: rentError } = await supabase
+                .from('rentals')
+                .update({ status: 'Returned', returned_at: new Date().toISOString() })
+                .eq('id', rentalToReturn.id);
+
+            if (rentError) throw rentError;
+
+            // Update car status & mileage
+            const newCarMileage = Math.max(Number(rentalToReturn.cars?.mileage || 0), Number(returnMileage));
+            const { error: carError } = await supabase
+                .from('cars')
+                .update({ status: 'Available', mileage: newCarMileage })
+                .eq('id', rentalToReturn.car_id);
+
+            if (carError) throw carError;
+
             setIsReturnModalOpen(false);
             setRentalToReturn(null);
-            setReturnMileage('');
             fetchRentals();
             fetchAvailableCars();
         } catch (error) {
@@ -330,14 +367,23 @@ export default function Rentals() {
         printRentalAgreement(rental, rental.cars, rental.customers);
     };
 
-    const formatMoney = (amount) => `${Number(amount).toLocaleString()} DA`;
+    const formatMoney = (amount) => `${Number(amount || 0).toLocaleString()} DA`;
+
+    // Calculate live cost calculation
+    const calcDays = rentData.startDate && rentData.endDate 
+        ? Math.max(1, Math.ceil(Math.abs(new Date(rentData.endDate) - new Date(rentData.startDate)) / (1000 * 60 * 60 * 24)))
+        : 0;
+    const calcTotal = calcDays * Number(rentData.dailyRate || 0);
 
     return (
         <Layout title="Rentals">
             <div className="space-y-6">
                 <div className="flex justify-between items-center">
-                    <h2 className="text-2xl font-bold text-white">Rental History</h2>
-                    <Button onClick={openNewRentalModal} icon={Plus}>New Rental</Button>
+                    <div>
+                        <h2 className="text-2xl font-bold text-white">Rental Agreements</h2>
+                        <p className="text-xs text-slate-400 mt-1">Manage car rentals, contracts, and returns</p>
+                    </div>
+                    <Button onClick={openNewRentalModal} icon={Plus}>New Rental Contract</Button>
                 </div>
 
                 {/* Rentals Table */}
@@ -349,7 +395,7 @@ export default function Rentals() {
                                     <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
                                     <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Vehicle</th>
                                     <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Customer</th>
-                                    <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Dates</th>
+                                    <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Date Range</th>
                                     <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Pickup</th>
                                     <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider text-right">Total</th>
                                     <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider text-right">Actions</th>
@@ -368,18 +414,18 @@ export default function Rentals() {
                                         <td className="px-6 py-4 font-medium text-white text-sm">
                                             {r.cars?.year} {r.cars?.make} {r.cars?.model}
                                         </td>
-                                        <td className="px-6 py-4 text-slate-400 text-sm">{r.customers?.name}</td>
-                                        <td className="px-6 py-4 text-xs text-slate-500">
+                                        <td className="px-6 py-4 text-slate-300 text-sm">{r.customers?.name}</td>
+                                        <td className="px-6 py-4 text-xs text-slate-400 font-medium">
                                             {new Date(r.start_date).toLocaleDateString()} → {new Date(r.end_date).toLocaleDateString()}
                                         </td>
-                                        <td className="px-6 py-4 text-xs text-slate-500">
-                                            {r.pickup_time ? r.pickup_time.slice(0, 5) : '—'}
+                                        <td className="px-6 py-4 text-xs text-slate-400">
+                                            {r.pickup_time ? r.pickup_time.slice(0, 5) : '10:00'}
                                         </td>
                                         <td className="px-6 py-4 text-right font-bold text-emerald-400 text-sm">{formatMoney(r.total_cost)}</td>
                                         <td className="px-6 py-4 text-right">
                                             <div className="flex justify-end gap-2">
                                                 <Button size="sm" variant="ghost" onClick={() => openEditModal(r)} icon={Pencil} />
-                                                <Button size="sm" variant="ghost" onClick={() => handlePrintAgreement(r)} icon={FileText} />
+                                                <Button size="sm" variant="ghost" onClick={() => handlePrintAgreement(r)} icon={FileText} className="text-blue-400 hover:bg-blue-400/10">عقد 📄</Button>
                                                 {r.status === 'Active' && (
                                                     <Button size="sm" variant="outline" onClick={() => openReturnModal(r)} icon={CheckCircle}>Return</Button>
                                                 )}
@@ -397,164 +443,236 @@ export default function Rentals() {
                     </div>
                 </div>
 
-                {/* New/Edit Rental Modal */}
-                <Modal isOpen={isRentModalOpen} onClose={() => setIsRentModalOpen(false)} title={editingRental ? 'Edit Rental' : 'New Rental'} size="lg">
+                {/* NEW / EDIT RENTAL MODAL WITH AVAILABILITY CALENDAR */}
+                <Modal isOpen={isRentModalOpen} onClose={() => setIsRentModalOpen(false)} title={editingRental ? 'Edit Rental Contract' : 'New Rental Contract'} size="lg">
                     <form onSubmit={handleSubmit} className="space-y-6">
-                        {/* Step 1: Select Car (only for new rentals) */}
-                        {!editingRental && (
-                            <div>
-                                <h3 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
-                                    <Car size={16} className="text-brand-400" /> Select Vehicle
-                                </h3>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-64 overflow-y-auto pr-1">
-                                    {availableCars.map(car => (
-                                        <button
-                                            key={car.id}
-                                            type="button"
-                                            onClick={() => handleCarSelect(car.id)}
-                                            className={`text-left p-4 rounded-xl border transition-all ${
-                                                selectedCarId === car.id
-                                                    ? 'border-brand-500 bg-brand-500/10 ring-1 ring-brand-500/30'
-                                                    : 'border-slate-800 bg-slate-800/30 hover:border-slate-700 hover:bg-slate-800/50'
-                                            }`}
-                                        >
-                                            <div className="font-semibold text-white text-sm">{car.year} {car.make} {car.model}</div>
-                                            <div className="flex flex-wrap gap-2 mt-2">
-                                                <span className="text-xs bg-slate-800 text-slate-400 px-2 py-0.5 rounded-md flex items-center gap-1">
-                                                    <Gauge size={10} /> {car.mileage?.toLocaleString() || 0} km
-                                                </span>
-                                                {car.color && (
-                                                    <span className="text-xs bg-slate-800 text-slate-400 px-2 py-0.5 rounded-md">{car.color}</span>
-                                                )}
-                                                {car.vin && (
-                                                    <span className="text-xs bg-slate-800 text-slate-400 px-2 py-0.5 rounded-md">VIN: {car.vin.slice(-6)}</span>
-                                                )}
-                                                <span className="text-xs bg-slate-800 text-slate-400 px-2 py-0.5 rounded-md">{car.fuel}</span>
-                                                <span className="text-xs bg-slate-800 text-slate-400 px-2 py-0.5 rounded-md">{car.transmission}</span>
-                                            </div>
-                                        </button>
-                                    ))}
-                                    {availableCars.length === 0 && (
-                                        <p className="col-span-2 text-center py-8 text-slate-600 text-sm">No available cars for rental.</p>
-                                    )}
-                                </div>
-                            </div>
-                        )}
-
-                        {editingRental && (
-                            <div className="bg-slate-800/30 rounded-xl p-4 border border-slate-700/30">
-                                <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Vehicle</p>
-                                <p className="font-semibold text-white">{selectedCar?.year} {selectedCar?.make} {selectedCar?.model}</p>
-                            </div>
-                        )}
-
-                        {/* Step 2: Customer Info */}
-                        {(selectedCarId || editingRental) && (
-                            <div>
-                                <h3 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
-                                    <User size={16} className="text-brand-400" /> Customer Info
-                                </h3>
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                            
+                            {/* Left Column: Vehicle, Customer & Contract Details */}
+                            <div className="lg:col-span-6 space-y-5">
                                 
+                                {/* Vehicle Selection */}
                                 {!editingRental && (
-                                    <div className="mb-4">
-                                        <Select 
-                                            label="Select Customer" 
-                                            value={selectedCustomerId} 
-                                            onChange={handleCustomerSelect}
-                                            options={[
-                                                { label: '+ Create New Customer', value: 'new' },
-                                                ...existingCustomers.map(c => ({ label: `${c.name} (${c.phone})`, value: c.id }))
-                                            ]} 
-                                        />
-                                    </div>
-                                )}
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <Input label="Full Name" value={customerData.name} onChange={e => setCustomerData({ ...customerData, name: e.target.value })} required placeholder="Customer name" />
-                                    <Input label="Phone" type="tel" value={customerData.phone} onChange={e => setCustomerData({ ...customerData, phone: e.target.value })} required placeholder="0550..." />
-                                    <Input label="Address" value={customerData.address} onChange={e => setCustomerData({ ...customerData, address: e.target.value })} placeholder="City, area" />
-                                    <Input label="National ID / License" value={customerData.national_id} onChange={e => setCustomerData({ ...customerData, national_id: e.target.value })} required />
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Step 3: Rental Details */}
-                        {(selectedCarId || editingRental) && (
-                            <div>
-                                <h3 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
-                                    <Calendar size={16} className="text-brand-400" /> Rental Details
-                                </h3>
-                                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                                    <Input label="Start Date" type="date" value={rentData.startDate} onChange={e => setRentData({ ...rentData, startDate: e.target.value })} required />
-                                    <Input label="End Date" type="date" value={rentData.endDate} onChange={e => setRentData({ ...rentData, endDate: e.target.value })} required />
-                                    <Input label="Pickup Time" type="time" value={rentData.pickupTime} onChange={e => setRentData({ ...rentData, pickupTime: e.target.value })} />
-                                    <Input label="Daily Rate (DA)" type="number" value={rentData.dailyRate} onChange={e => setRentData({ ...rentData, dailyRate: e.target.value })} required />
-                                    <Input label="Mileage at Pickup" type="number" value={rentData.mileageOut} onChange={e => setRentData({ ...rentData, mileageOut: e.target.value })} />
-                                </div>
-
-                                {/* Cost Preview */}
-                                {rentData.startDate && rentData.endDate && rentData.dailyRate && (
-                                    <div className="mt-4 p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/20">
-                                        <div className="flex justify-between items-center">
-                                            <span className="text-sm text-slate-400">
-                                                {Math.ceil(Math.abs(new Date(rentData.endDate) - new Date(rentData.startDate)) / (1000 * 60 * 60 * 24))} days × {formatMoney(rentData.dailyRate)}
-                                            </span>
-                                            <span className="text-lg font-bold text-emerald-400">
-                                                {formatMoney(Math.ceil(Math.abs(new Date(rentData.endDate) - new Date(rentData.startDate)) / (1000 * 60 * 60 * 24)) * Number(rentData.dailyRate))}
-                                            </span>
+                                    <div>
+                                        <h3 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
+                                            <Car size={16} className="text-brand-400" /> 1. Select Vehicle
+                                        </h3>
+                                        <div className="grid grid-cols-1 gap-2.5 max-h-52 overflow-y-auto pr-1">
+                                            {availableCars.map(car => (
+                                                <button
+                                                    key={car.id}
+                                                    type="button"
+                                                    onClick={() => handleCarSelect(car.id)}
+                                                    className={`text-left p-3 rounded-xl border transition-all ${
+                                                        selectedCarId === car.id
+                                                            ? 'border-brand-500 bg-brand-500/10 ring-1 ring-brand-500/30'
+                                                            : 'border-slate-800 bg-slate-800/30 hover:border-slate-700 hover:bg-slate-800/50'
+                                                    }`}
+                                                >
+                                                    <div className="font-semibold text-white text-sm">{car.year} {car.make} {car.model}</div>
+                                                    <div className="flex flex-wrap gap-2 mt-1">
+                                                        <span className="text-[11px] text-slate-400 flex items-center gap-1">
+                                                            <Gauge size={10} /> {car.mileage?.toLocaleString() || 0} km
+                                                        </span>
+                                                        {car.color && <span className="text-[11px] text-slate-400">• {car.color}</span>}
+                                                        {car.fuel && <span className="text-[11px] text-slate-400">• {car.fuel}</span>}
+                                                    </div>
+                                                </button>
+                                            ))}
+                                            {availableCars.length === 0 && (
+                                                <p className="text-center py-6 text-slate-600 text-xs">No available cars found.</p>
+                                            )}
                                         </div>
                                     </div>
                                 )}
-                            </div>
-                        )}
 
-                        {(selectedCarId || editingRental) && (
-                            <div className="flex justify-end pt-2">
-                                <Button type="submit" size="lg">{editingRental ? 'Save Changes' : 'Create Rental'}</Button>
+                                {editingRental && (
+                                    <div className="bg-slate-800/30 rounded-xl p-3 border border-slate-700/30">
+                                        <span className="text-xs text-slate-500 uppercase tracking-wider block mb-1">Vehicle</span>
+                                        <span className="font-semibold text-white">{selectedCar?.year} {selectedCar?.make} {selectedCar?.model}</span>
+                                    </div>
+                                )}
+
+                                {/* Customer Section */}
+                                {(selectedCarId || editingRental) && (
+                                    <div>
+                                        <h3 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
+                                            <User size={16} className="text-brand-400" /> 2. Customer Info
+                                        </h3>
+                                        
+                                        {!editingRental && (
+                                            <div className="mb-3">
+                                                <Select 
+                                                    label="Select Customer" 
+                                                    value={selectedCustomerId} 
+                                                    onChange={handleCustomerSelect}
+                                                    options={[
+                                                        { label: '+ Create New Customer', value: 'new' },
+                                                        ...existingCustomers.map(c => ({ label: `${c.name} (${c.phone})`, value: c.id }))
+                                                    ]} 
+                                                />
+                                            </div>
+                                        )}
+
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <Input label="Full Name" value={customerData.name} onChange={e => setCustomerData({ ...customerData, name: e.target.value })} required placeholder="Name" />
+                                            <Input label="Phone" type="tel" value={customerData.phone} onChange={e => setCustomerData({ ...customerData, phone: e.target.value })} required placeholder="Phone" />
+                                            <Input label="Address" value={customerData.address} onChange={e => setCustomerData({ ...customerData, address: e.target.value })} placeholder="City" />
+                                            <Input label="National ID / License" value={customerData.national_id} onChange={e => setCustomerData({ ...customerData, national_id: e.target.value })} required placeholder="License #" />
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Rental Rates & Pickup Details */}
+                                {(selectedCarId || editingRental) && (
+                                    <div>
+                                        <h3 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
+                                            <Key size={16} className="text-brand-400" /> 3. Rental Details
+                                        </h3>
+
+                                        <div className="grid grid-cols-2 gap-3 mb-3">
+                                            <Input 
+                                                label="Start Date" 
+                                                type="date" 
+                                                value={rentData.startDate} 
+                                                onChange={e => setRentData(prev => ({ ...prev, startDate: e.target.value }))} 
+                                                required 
+                                            />
+                                            <Input 
+                                                label="End Date" 
+                                                type="date" 
+                                                value={rentData.endDate} 
+                                                onChange={e => setRentData(prev => ({ ...prev, endDate: e.target.value }))} 
+                                                required 
+                                            />
+                                        </div>
+
+                                        <div className="grid grid-cols-3 gap-3">
+                                            <Input label="Daily Rate (DA)" type="number" value={rentData.dailyRate} onChange={e => setRentData({ ...rentData, dailyRate: e.target.value })} required />
+                                            <Input label="Pickup Time" type="time" value={rentData.pickupTime} onChange={e => setRentData({ ...rentData, pickupTime: e.target.value })} />
+                                            <Input label="Odometer (KM)" type="number" value={rentData.mileageOut} onChange={e => setRentData({ ...rentData, mileageOut: e.target.value })} placeholder="KM" />
+                                        </div>
+
+                                        {/* Cost Summary Preview */}
+                                        {calcDays > 0 && (
+                                            <div className="mt-3 p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-between">
+                                                <div>
+                                                    <div className="text-xs text-slate-300 font-semibold">{calcDays} Rental Days × {formatMoney(rentData.dailyRate)} / day</div>
+                                                    <div className="text-[11px] text-slate-400">Includes 400 KM per day limit</div>
+                                                </div>
+                                                <div className="text-lg font-black text-emerald-400">
+                                                    {formatMoney(calcTotal)}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
                             </div>
-                        )}
+
+                            {/* Right Column: Availability Calendar */}
+                            <div className="lg:col-span-6 space-y-4">
+                                <div>
+                                    <h3 className="text-sm font-bold text-white mb-2 flex items-center justify-between">
+                                        <span className="flex items-center gap-2">
+                                            <CalendarIcon size={16} className="text-emerald-400" /> Availability Calendar
+                                        </span>
+                                        <span className="text-[11px] text-emerald-400 font-normal">Select rental date range</span>
+                                    </h3>
+                                    <p className="text-xs text-slate-400 mb-3">
+                                        Click a <strong className="text-emerald-400">Green</strong> date for Start Date, then a second Green date for End Date. Rented dates are <strong className="text-red-400">Red & disabled</strong>.
+                                    </p>
+                                </div>
+
+                                <AvailabilityCalendar
+                                    selectedCarId={selectedCarId}
+                                    carName={selectedCar ? `${selectedCar.year} ${selectedCar.make} ${selectedCar.model}` : ''}
+                                    rentals={carSchedule.rentals}
+                                    appointments={carSchedule.appointments}
+                                    startDate={rentData.startDate}
+                                    endDate={rentData.endDate}
+                                    onSelectRange={(startStr, endStr) => {
+                                        setRentData(prev => ({
+                                            ...prev,
+                                            startDate: startStr,
+                                            endDate: endStr
+                                        }));
+                                    }}
+                                />
+                            </div>
+
+                        </div>
+
+                        <div className="flex justify-end pt-4 border-t border-slate-800/50">
+                            <Button type="submit" size="lg" disabled={!selectedCarId && !editingRental}>
+                                {editingRental ? 'Save Changes' : 'Create Rental Contract'}
+                            </Button>
+                        </div>
                     </form>
                 </Modal>
 
-                {/* Return Rental Modal */}
-                <Modal isOpen={isReturnModalOpen} onClose={() => { setIsReturnModalOpen(false); setRentalToReturn(null); }} title="Return Vehicle">
-                    <form onSubmit={submitReturn} className="space-y-4">
-                        <div className="bg-slate-800/30 rounded-xl p-4 border border-slate-700/30">
-                            <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Vehicle</p>
-                            <p className="font-semibold text-white mb-2">{rentalToReturn?.cars?.year} {rentalToReturn?.cars?.make} {rentalToReturn?.cars?.model}</p>
-                            <p className="text-xs text-slate-400">Mileage at Pickup: <span className="text-white font-medium">{rentalToReturn?.mileage_out || rentalToReturn?.cars?.mileage || 0} km</span></p>
-                        </div>
-                        
-                        <Input label="New Mileage (KM)" type="number" value={returnMileage} onChange={e => setReturnMileage(e.target.value)} required placeholder="Enter updated odometer reading" />
-                        
-                        {returnMileage && Number(returnMileage) > (rentalToReturn?.mileage_out || rentalToReturn?.cars?.mileage || 0) && (
-                            <div className={`p-4 rounded-xl border ${calculateExtraCost().cost > 0 ? 'bg-red-500/10 border-red-500/20' : 'bg-slate-800/50 border-slate-700/50'}`}>
-                                <div className="grid grid-cols-2 gap-y-2 text-sm mb-2">
-                                    <div className="text-slate-400">Distance Driven:</div>
-                                    <div className="text-right text-white font-medium">{calculateExtraCost().driven} km</div>
-                                    
-                                    <div className="text-slate-400">Allowed Limit:</div>
-                                    <div className="text-right text-white font-medium">{calculateExtraCost().allowed} km</div>
-                                    
-                                    <div className="text-slate-400">Excess Mileage:</div>
-                                    <div className={`text-right font-bold ${calculateExtraCost().excess > 0 ? 'text-red-400' : 'text-emerald-400'}`}>
-                                        {calculateExtraCost().excess} km
-                                    </div>
+                {/* Return Vehicle Modal */}
+                <Modal isOpen={isReturnModalOpen} onClose={() => setIsReturnModalOpen(false)} title="Return Vehicle" size="md">
+                    {rentalToReturn && (
+                        <div className="space-y-4">
+                            <div className="p-4 rounded-xl bg-slate-800/40 border border-slate-700/40">
+                                <div className="font-bold text-white text-base mb-1">
+                                    {rentalToReturn.cars?.year} {rentalToReturn.cars?.make} {rentalToReturn.cars?.model}
                                 </div>
-                                
-                                {calculateExtraCost().cost > 0 && (
-                                    <div className="mt-3 pt-3 border-t border-red-500/20 flex justify-between items-center">
-                                        <span className="text-sm font-bold text-red-400">Extra Cost (15 DA/km):</span>
-                                        <span className="text-lg font-bold text-red-400">+{formatMoney(calculateExtraCost().cost)}</span>
-                                    </div>
-                                )}
+                                <div className="text-xs text-slate-400">
+                                    Customer: <strong className="text-white">{rentalToReturn.customers?.name}</strong>
+                                </div>
+                                <div className="text-xs text-slate-400 mt-1">
+                                    Pickup Odometer: <strong className="text-brand-400">{rentalToReturn.mileage_out || rentalToReturn.cars?.mileage || 0} KM</strong>
+                                </div>
                             </div>
-                        )}
 
-                        <div className="flex justify-end pt-2">
-                            <Button type="submit" variant="success">Confirm Return</Button>
+                            <Input 
+                                label="Return Odometer Reading (KM)" 
+                                type="number" 
+                                value={returnMileage} 
+                                onChange={e => setReturnMileage(e.target.value)}
+                                placeholder="Enter current odometer reading" 
+                                required 
+                            />
+
+                            {/* Excess Mileage Calculation */}
+                            {returnMileage && Number(returnMileage) > 0 && (
+                                <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-2 text-xs">
+                                    {(() => {
+                                        const calc = calculateExtraCost();
+                                        return (
+                                            <>
+                                                <div className="flex justify-between text-slate-400">
+                                                    <span>Total Distance Driven:</span>
+                                                    <span className="font-semibold text-white">{calc.driven.toLocaleString()} KM</span>
+                                                </div>
+                                                <div className="flex justify-between text-slate-400">
+                                                    <span>Allowed Distance (400 KM/day):</span>
+                                                    <span className="font-semibold text-white">{calc.allowed.toLocaleString()} KM</span>
+                                                </div>
+                                                {calc.excess > 0 ? (
+                                                    <div className="pt-2 border-t border-slate-800 flex justify-between text-red-400 font-bold">
+                                                        <span>Excess Distance ({calc.excess} KM × 15 DA):</span>
+                                                        <span>+ {formatMoney(calc.cost)}</span>
+                                                    </div>
+                                                ) : (
+                                                    <div className="pt-2 border-t border-slate-800 text-emerald-400 font-semibold">
+                                                        ✓ Distance driven is within the 400 KM/day limit (No extra charge).
+                                                    </div>
+                                                )}
+                                            </>
+                                        );
+                                    })()}
+                                </div>
+                            )}
+
+                            <div className="flex justify-end gap-3 pt-4 border-t border-slate-800">
+                                <Button variant="secondary" onClick={() => setIsReturnModalOpen(false)}>Cancel</Button>
+                                <Button onClick={handleConfirmReturn} icon={CheckCircle}>Confirm Return</Button>
+                            </div>
                         </div>
-                    </form>
+                    )}
                 </Modal>
             </div>
         </Layout>

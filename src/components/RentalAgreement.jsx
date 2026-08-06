@@ -1,10 +1,10 @@
 /**
- * Rental Agreement - Printable Arabic Contract
- * Opens a new window with a formatted A4 Arabic rental agreement
+ * Premium 2-Page Modern Arabic Rental Agreement
+ * Format: A4 (2 Pages), Printable, RTL layout, Sleek Modern Aesthetics
  */
 
 export function printRentalAgreement(rental, car, customer) {
-    const printWindow = window.open('', '_blank', 'width=800,height=1100');
+    const printWindow = window.open('', '_blank', 'width=900,height=1200');
     if (!printWindow) {
         alert('يرجى السماح بالنوافذ المنبثقة لطباعة العقد');
         return;
@@ -15,29 +15,32 @@ export function printRentalAgreement(rental, car, customer) {
     const endDate = new Date(rental.end_date);
     
     const formatDate = (d) => {
+        if (!d) return '............';
         const date = new Date(d);
         return `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')}`;
     };
 
-    const formatMoney = (amount) => `${Number(amount).toLocaleString('ar-DZ')} دج`;
+    const formatMoney = (amount) => `${Number(amount || 0).toLocaleString('ar-DZ')} دج`;
 
     const diffTime = Math.abs(endDate - startDate);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    const diffDays = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
     const totalCost = rental.total_cost || (diffDays * rental.daily_rate);
 
     const mileageOut = rental.mileage_out || car?.mileage || '............';
-    const pickupTime = rental.pickup_time ? rental.pickup_time.slice(0, 5) : '............';
-    const carYear = car?.year || rental.cars?.year || '';
-    const carMake = car?.make || rental.cars?.make || '';
-    const carModel = car?.model || rental.cars?.model || '';
-    const carColor = car?.color || rental.cars?.color || '';
-    const carVin = car?.vin || rental.cars?.vin || '';
-    const carFuel = car?.fuel || rental.cars?.fuel || '';
-    const carTransmission = car?.transmission || rental.cars?.transmission || '';
-    const customerName = customer?.name || rental.customers?.name || '';
-    const customerPhone = customer?.phone || rental.customers?.phone || '';
-    const customerAddress = customer?.address || rental.customers?.address || '';
-    const customerNationalId = customer?.national_id || rental.customers?.national_id || '';
+    const pickupTime = rental.pickup_time ? rental.pickup_time.slice(0, 5) : '10:00';
+    const carYear = car?.year || rental.cars?.year || '2024';
+    const carMake = car?.make || rental.cars?.make || 'Toyota';
+    const carModel = car?.model || rental.cars?.model || 'Corolla';
+    const carColor = car?.color || rental.cars?.color || 'أبيض';
+    const carVin = car?.vin || rental.cars?.vin || 'غير محدد';
+    const carFuel = car?.fuel || rental.cars?.fuel || 'بنزين';
+    const carTransmission = car?.transmission || rental.cars?.transmission || 'أوتوماتيك';
+    const customerName = customer?.name || rental.customers?.name || 'اسم المستأجر';
+    const customerPhone = customer?.phone || rental.customers?.phone || '0550000000';
+    const customerAddress = customer?.address || rental.customers?.address || 'جيجل، الجزائر';
+    const customerNationalId = customer?.national_id || rental.customers?.national_id || 'رقم رخصة السياقة';
+
+    const contractId = rental.id ? rental.id.substring(0, 8).toUpperCase() : 'WA-' + Math.floor(100000 + Math.random() * 900000);
 
     const html = `
 <!DOCTYPE html>
@@ -45,9 +48,9 @@ export function printRentalAgreement(rental, car, customer) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>عقد إيجار سيارة - ${customerName}</title>
+    <title>عقد إيجار سيارة - ${customerName} (${contractId})</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@400;500;600;700&family=Amiri:wght@400;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@400;500;600;700;800;900&family=Amiri:wght@400;700&display=swap');
         
         * {
             margin: 0;
@@ -57,514 +60,785 @@ export function printRentalAgreement(rental, car, customer) {
         
         @page {
             size: A4;
-            margin: 12mm;
-        }
-        
-        body {
-            font-family: 'Noto Naskh Arabic', 'Amiri', 'Traditional Arabic', serif;
-            font-size: 13px;
-            line-height: 1.8;
-            color: #1a1a1a;
-            background: #f0f0f0;
-            direction: rtl;
-        }
-        
-        .contract-page {
-            width: 210mm;
-            min-height: 297mm;
-            background: white;
-            margin: 10mm auto;
-            padding: 14mm 16mm;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-            position: relative;
-            overflow: hidden;
-        }
-        
-        /* Decorative border */
-        .contract-page::before {
-            content: '';
-            position: absolute;
-            top: 6mm;
-            left: 6mm;
-            right: 6mm;
-            bottom: 6mm;
-            border: 2px solid #2c5282;
-            border-radius: 4px;
-            pointer-events: none;
-        }
-        
-        .contract-page::after {
-            content: '';
-            position: absolute;
-            top: 8mm;
-            left: 8mm;
-            right: 8mm;
-            bottom: 8mm;
-            border: 0.5px solid #a0aec0;
-            border-radius: 2px;
-            pointer-events: none;
-        }
-        
-        .content-wrapper {
-            position: relative;
-            z-index: 1;
-            padding: 2mm;
-        }
-
-        /* Header */
-        .header {
-            text-align: center;
-            margin-bottom: 6mm;
-            padding-bottom: 4mm;
-            border-bottom: 2px solid #2c5282;
-        }
-        
-        .header h1 {
-            font-size: 26px;
-            font-weight: 700;
-            color: #2c5282;
-            margin-bottom: 2mm;
-            letter-spacing: 1px;
-        }
-        
-        .header .subtitle {
-            font-size: 14px;
-            color: #4a5568;
-            font-weight: 500;
-        }
-        
-        .header .contract-number {
-            font-size: 11px;
-            color: #718096;
-            margin-top: 2mm;
-        }
-
-        /* Section titles */
-        .section-title {
-            background: linear-gradient(135deg, #2c5282, #2b6cb0);
-            color: white;
-            padding: 3mm 5mm;
-            font-size: 14px;
-            font-weight: 700;
-            border-radius: 4px;
-            margin: 4mm 0 3mm 0;
-            display: flex;
-            align-items: center;
-            gap: 3mm;
-        }
-        
-        .section-title .icon {
-            font-size: 16px;
-        }
-        
-        /* Info grid */
-        .info-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 2mm 6mm;
-            padding: 3mm 4mm;
-            background: #f7fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 4px;
-            margin-bottom: 3mm;
-        }
-        
-        .info-item {
-            display: flex;
-            align-items: baseline;
-            gap: 2mm;
-            padding: 1.5mm 0;
-        }
-        
-        .info-label {
-            font-weight: 700;
-            color: #2d3748;
-            white-space: nowrap;
-            font-size: 12px;
-            min-width: 70px;
-        }
-        
-        .info-value {
-            color: #1a202c;
-            border-bottom: 1px dotted #a0aec0;
-            flex: 1;
-            padding-bottom: 1px;
-            font-size: 12.5px;
-            font-weight: 500;
-        }
-        
-        .info-item.full-width {
-            grid-column: 1 / -1;
-        }
-        
-        /* Price section */
-        .price-section {
-            background: linear-gradient(135deg, #ebf8ff, #e6fffa);
-            border: 1.5px solid #2c5282;
-            border-radius: 6px;
-            padding: 4mm 5mm;
-            margin: 4mm 0;
-        }
-        
-        .price-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 3mm;
-            text-align: center;
-        }
-        
-        .price-item {
-            padding: 2mm;
-        }
-        
-        .price-item .label {
-            font-size: 11px;
-            color: #4a5568;
-            font-weight: 600;
-            margin-bottom: 1mm;
-        }
-        
-        .price-item .value {
-            font-size: 16px;
-            font-weight: 700;
-            color: #2c5282;
-        }
-        
-        .total-price {
-            text-align: center;
-            margin-top: 3mm;
-            padding-top: 3mm;
-            border-top: 1px dashed #2c5282;
-        }
-        
-        .total-price .label {
-            font-size: 12px;
-            color: #4a5568;
-            font-weight: 600;
-        }
-        
-        .total-price .value {
-            font-size: 22px;
-            font-weight: 700;
-            color: #c53030;
-        }
-
-        /* Conditions */
-        .conditions-list {
-            padding: 3mm 4mm;
-            background: #fffaf0;
-            border: 1px solid #fbd38d;
-            border-radius: 4px;
-            margin-bottom: 3mm;
-        }
-        
-        .conditions-list ol {
-            padding-right: 6mm;
             margin: 0;
         }
         
-        .conditions-list li {
-            padding: 1.5mm 0;
+        body {
+            font-family: 'Noto Kufi Arabic', 'Amiri', 'Traditional Arabic', sans-serif;
             font-size: 12px;
-            line-height: 1.9;
-            color: #2d3748;
+            line-height: 1.6;
+            color: #0f172a;
+            background: #e2e8f0;
+            direction: rtl;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+        
+        /* A4 Page Container */
+        .page {
+            width: 210mm;
+            height: 297mm;
+            background: white;
+            margin: 10mm auto;
+            padding: 12mm 15mm;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
             position: relative;
-        }
-        
-        .conditions-list li::marker {
-            color: #c53030;
-            font-weight: 700;
-        }
-        
-        .conditions-list li strong {
-            color: #c53030;
+            page-break-after: always;
+            display: flex;
+            flex-col: column;
+            justify-content: space-between;
+            overflow: hidden;
         }
 
-        /* License copy note */
-        .license-note {
-            background: #fff5f5;
-            border: 1px solid #fc8181;
+        /* Outer Frame Border */
+        .page-frame {
+            position: absolute;
+            top: 5mm;
+            left: 5mm;
+            right: 5mm;
+            bottom: 5mm;
+            border: 2px solid #0f172a;
+            border-radius: 6px;
+            pointer-events: none;
+        }
+
+        .page-frame-inner {
+            position: absolute;
+            top: 6.5mm;
+            left: 6.5mm;
+            right: 6.5mm;
+            bottom: 6.5mm;
+            border: 0.5px solid #94a3b8;
             border-radius: 4px;
-            padding: 2.5mm 4mm;
-            text-align: center;
-            font-weight: 700;
-            color: #c53030;
-            font-size: 12px;
-            margin: 3mm 0;
+            pointer-events: none;
+        }
+        
+        .content {
+            position: relative;
+            z-index: 2;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
         }
 
-        /* Signatures */
-        .signatures {
+        /* Modern Header Banner */
+        .header {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: white;
+            padding: 12px 18px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.2);
+            border-bottom: 3px solid #3b82f6;
+        }
+
+        .brand-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .brand-logo {
+            background: #3b82f6;
+            color: white;
+            font-weight: 900;
+            font-size: 20px;
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+        }
+
+        .brand-text h1 {
+            font-size: 20px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            color: #ffffff;
+            margin-bottom: 1px;
+        }
+
+        .brand-text p {
+            font-size: 11px;
+            color: #94a3b8;
+            font-weight: 500;
+        }
+
+        .contract-meta {
+            text-align: left;
+            background: rgba(255, 255, 255, 0.08);
+            padding: 8px 14px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .contract-badge {
+            display: inline-block;
+            background: #3b82f6;
+            color: white;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 4px;
+            margin-bottom: 3px;
+        }
+
+        .contract-date {
+            font-size: 10.5px;
+            color: #cbd5e1;
+        }
+
+        /* Section Cards */
+        .section-box {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 10px 14px;
+            margin-bottom: 10px;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-bottom: 6px;
+            margin-bottom: 8px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .section-title {
+            font-size: 13px;
+            font-weight: 800;
+            color: #0f172a;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .section-title span.icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 22px;
+            height: 22px;
+            background: #0f172a;
+            color: white;
+            border-radius: 6px;
+            font-size: 11px;
+        }
+
+        /* Data Grid Table Layout */
+        .grid-2 {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 10mm;
-            margin-top: 8mm;
-            padding-top: 4mm;
+            gap: 8px 14px;
         }
-        
-        .signature-box {
-            text-align: center;
-            border: 1px solid #cbd5e0;
-            border-radius: 6px;
-            padding: 4mm;
-            background: #f7fafc;
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 8px 12px;
         }
-        
-        .signature-box .title {
+
+        .grid-4 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr;
+            gap: 8px 10px;
+        }
+
+        .field-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .field-label {
+            font-size: 10px;
             font-weight: 700;
-            font-size: 13px;
-            color: #2d3748;
-            margin-bottom: 3mm;
-            padding-bottom: 2mm;
-            border-bottom: 1px solid #e2e8f0;
+            color: #64748b;
+            margin-bottom: 2px;
+            text-transform: uppercase;
         }
-        
-        .signature-box .sign-area {
-            height: 22mm;
-            border-bottom: 1px solid #2d3748;
-            margin: 3mm 5mm;
+
+        .field-value {
+            font-size: 12px;
+            font-weight: 700;
+            color: #0f172a;
+            background: white;
+            padding: 5px 8px;
+            border-radius: 6px;
+            border: 1px solid #cbd5e1;
+            min-height: 28px;
+            display: flex;
+            align-items: center;
         }
-        
-        .signature-box .name {
+
+        /* Highlight Cards for Financials */
+        .financial-summary {
+            display: grid;
+            grid-template-columns: 1.2fr 1fr 1.2fr;
+            gap: 10px;
+            margin: 10px 0;
+        }
+
+        .fin-card {
+            background: white;
+            border: 1.5px solid #cbd5e1;
+            border-radius: 10px;
+            padding: 10px;
+            text-align: center;
+        }
+
+        .fin-card.primary {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: white;
+            border-color: #0f172a;
+        }
+
+        .fin-card.primary .fin-label {
+            color: #94a3b8;
+        }
+
+        .fin-card.primary .fin-value {
+            color: #38bdf8;
+        }
+
+        .fin-card.highlight {
+            background: #eff6ff;
+            border-color: #3b82f6;
+        }
+
+        .fin-card.highlight .fin-value {
+            color: #2563eb;
+        }
+
+        .fin-label {
+            font-size: 10.5px;
+            font-weight: 700;
+            color: #475569;
+            margin-bottom: 4px;
+        }
+
+        .fin-value {
+            font-size: 18px;
+            font-weight: 900;
+            color: #0f172a;
+        }
+
+        /* Visual Inspection Checklist */
+        .checklist-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 6px;
+            margin-top: 6px;
+        }
+
+        .check-item {
+            background: white;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            padding: 6px;
+            text-align: center;
+            font-size: 10px;
+            font-weight: 600;
+        }
+
+        .check-item span.status {
+            display: block;
+            font-weight: 800;
+            color: #16a34a;
+            margin-top: 2px;
+        }
+
+        /* Conditions Styling for Page 2 */
+        .conditions-container {
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+        }
+
+        .condition-card {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-right: 4px solid #0f172a;
+            border-radius: 6px;
+            padding: 8px 12px;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .condition-card.alert {
+            border-right-color: #dc2626;
+            background: #fef2f2;
+        }
+
+        .condition-num {
+            background: #0f172a;
+            color: white;
             font-size: 11px;
-            color: #718096;
-            margin-top: 1mm;
+            font-weight: 800;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+
+        .condition-card.alert .condition-num {
+            background: #dc2626;
+        }
+
+        .condition-text {
+            font-size: 11.5px;
+            color: #1e293b;
+            line-height: 1.6;
+        }
+
+        .condition-text strong {
+            color: #0f172a;
+            font-weight: 800;
+        }
+
+        .condition-card.alert .condition-text strong {
+            color: #b91c1c;
+        }
+
+        /* Customer Declaration Box */
+        .declaration-box {
+            background: #f1f5f9;
+            border: 1.5px dashed #64748b;
+            border-radius: 8px;
+            padding: 10px 14px;
+            margin: 10px 0;
+            font-size: 11px;
+            line-height: 1.7;
+            color: #0f172a;
+        }
+
+        /* Signature Section */
+        .signatures-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .sig-box {
+            border: 1.5px solid #cbd5e1;
+            border-radius: 10px;
+            background: white;
+            padding: 10px;
+            text-align: center;
+            min-height: 115px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .sig-title {
+            font-size: 11px;
+            font-weight: 800;
+            color: #0f172a;
+            border-bottom: 1px solid #f1f5f9;
+            padding-bottom: 4px;
+        }
+
+        .sig-space {
+            height: 55px;
+        }
+
+        .sig-name {
+            font-size: 10px;
+            color: #64748b;
+            font-weight: 600;
         }
 
         /* Footer */
-        .footer {
-            text-align: center;
-            margin-top: 5mm;
-            padding-top: 3mm;
+        .page-footer {
             border-top: 1px solid #e2e8f0;
-            font-size: 10px;
-            color: #a0aec0;
+            padding-top: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 9.5px;
+            color: #64748b;
         }
-        
-        /* Print styles */
-        @media print {
-            .page-break {
-                page-break-before: always;
-            }
-            body {
-                background: white;
-            }
-            
-            .contract-page {
-                margin: 0;
-                padding: 10mm 14mm;
-                box-shadow: none;
-                width: 100%;
-                min-height: auto;
-            }
-            
-            .no-print {
-                display: none !important;
-            }
+
+        /* Print Controls */
+        .print-toolbar {
+            position: fixed;
+            top: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 9999;
+            background: #0f172a;
+            padding: 10px 24px;
+            border-radius: 30px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            display: flex;
+            align-items: center;
+            gap: 16px;
         }
-        
-        /* Print button */
-        .print-btn-container {
-            text-align: center;
-            margin: 5mm auto;
-        }
-        
-        .print-btn {
-            background: linear-gradient(135deg, #2c5282, #2b6cb0);
+
+        .btn-print {
+            background: #3b82f6;
             color: white;
             border: none;
-            padding: 10px 40px;
-            font-size: 16px;
-            font-family: 'Noto Naskh Arabic', serif;
+            padding: 8px 24px;
+            font-size: 14px;
+            font-family: 'Noto Kufi Arabic', sans-serif;
             font-weight: 700;
-            border-radius: 8px;
+            border-radius: 20px;
             cursor: pointer;
             transition: all 0.2s;
         }
-        
-        .print-btn:hover {
-            background: linear-gradient(135deg, #2b6cb0, #3182ce);
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(44, 82, 130, 0.4);
+
+        .btn-print:hover {
+            background: #2563eb;
+            transform: scale(1.05);
+        }
+
+        @media print {
+            body {
+                background: white;
+            }
+            .page {
+                margin: 0;
+                box-shadow: none;
+                width: 210mm;
+                height: 297mm;
+            }
+            .print-toolbar {
+                display: none !important;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="print-btn-container no-print">
-        <button class="print-btn" onclick="window.print()">🖨️ طباعة العقد</button>
+
+    <!-- Floating Print Button -->
+    <div class="print-toolbar">
+        <span style="color: white; font-size: 13px; font-weight: 600;">📄 عقد إيجار رسمي (صفحتين A4)</span>
+        <button class="btn-print" onclick="window.print()">🖨️ طباعة العقد</button>
     </div>
-    
-    <div class="contract-page">
-        <div class="content-wrapper">
-            <!-- Header -->
-            <div class="header">
-                <h1>عقد إيجار سيارة</h1>
-                <div class="subtitle">واحد أوتو - بازول، جيجل</div>
-                <div class="contract-number">رقم العقد: ${rental.id?.substring(0, 8)?.toUpperCase() || '---'} &nbsp;|&nbsp; التاريخ: ${formatDate(today)}</div>
-            </div>
 
-            <!-- Client Info -->
-            <div class="section-title">
-                <span class="icon">👤</span>
-                معلومات المستأجر
-            </div>
-            <div class="info-grid">
-                <div class="info-item">
-                    <span class="info-label">الاسم الكامل:</span>
-                    <span class="info-value">${customerName}</span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">رقم الهاتف:</span>
-                    <span class="info-value">${customerPhone}</span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">العنوان:</span>
-                    <span class="info-value">${customerAddress || '..............................'}</span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">رقم بطاقة التعريف:</span>
-                    <span class="info-value">${customerNationalId || '..............................'}</span>
-                </div>
-            </div>
+    <!-- ================= PAGE 1 ================= -->
+    <div class="page">
+        <div class="page-frame"></div>
+        <div class="page-frame-inner"></div>
 
-            <!-- Car Info -->
-            <div class="section-title">
-                <span class="icon">🚗</span>
-                معلومات السيارة
-            </div>
-            <div class="info-grid">
-                <div class="info-item">
-                    <span class="info-label">الماركة:</span>
-                    <span class="info-value">${carMake}</span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">الموديل:</span>
-                    <span class="info-value">${carModel}</span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">سنة الصنع:</span>
-                    <span class="info-value">${carYear}</span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">اللون:</span>
-                    <span class="info-value">${carColor || '..............................'}</span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">نوع الوقود:</span>
-                    <span class="info-value">${carFuel || '..............................'}</span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">ناقل الحركة:</span>
-                    <span class="info-value">${carTransmission || '..............................'}</span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">رقم الهيكل:</span>
-                    <span class="info-value">${carVin || '..............................'}</span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">عداد الكيلومتر عند التسليم:</span>
-                    <span class="info-value">${mileageOut} كم</span>
-                </div>
-            </div>
-
-            <!-- Rental Period & Price -->
-            <div class="section-title">
-                <span class="icon">📅</span>
-                مدة الإيجار و التكلفة
-            </div>
-            <div class="info-grid">
-                <div class="info-item">
-                    <span class="info-label">تاريخ البداية:</span>
-                    <span class="info-value">${formatDate(startDate)}</span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">تاريخ النهاية:</span>
-                    <span class="info-value">${formatDate(endDate)}</span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">عدد الأيام:</span>
-                    <span class="info-value">${diffDays} يوم</span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">ساعة الاستلام:</span>
-                    <span class="info-value">${pickupTime}</span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">عداد الكيلومتر عند الإرجاع:</span>
-                    <span class="info-value">..............................  كم</span>
-                </div>
-            </div>
-            
-            <div class="price-section">
-                <div class="price-grid">
-                    <div class="price-item">
-                        <div class="label">سعر اليوم الواحد</div>
-                        <div class="value">${formatMoney(rental.daily_rate)}</div>
+        <div class="content">
+            <div>
+                <!-- Header Banner -->
+                <div class="header">
+                    <div class="brand-title">
+                        <div class="brand-logo">W</div>
+                        <div class="brand-text">
+                            <h1>واحد أوتو - WAHID AUTO</h1>
+                            <p>معرض وكراء السيارات - بازول، طاهير، جيجل</p>
+                        </div>
                     </div>
-                    <div class="price-item">
-                        <div class="label">عدد الأيام</div>
-                        <div class="value">${diffDays}</div>
-                    </div>
-                    <div class="price-item">
-                        <div class="label">المبلغ الإجمالي</div>
-                        <div class="value">${formatMoney(totalCost)}</div>
+
+                    <div class="contract-meta">
+                        <div class="contract-badge">عقد إيجار رقم: ${contractId}</div>
+                        <div class="contract-date">تاريخ التحرير: ${formatDate(today)}</div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Page break for professional layout -->
-            <div class="page-break"></div>
+                <!-- Section 1: Customer Info -->
+                <div class="section-box">
+                    <div class="section-header">
+                        <div class="section-title">
+                            <span class="icon">👤</span>
+                            أولاً: بيانات المستأجر (الطرف الثاني)
+                        </div>
+                        <span style="font-size: 10px; font-weight: 700; color: #1e40af; background: #dbeafe; px-2 py-0.5; rounded-md;">نسخة رخصة السياقة مرفقة</span>
+                    </div>
 
-            <!-- Conditions -->
-            <div class="section-title">
-                <span class="icon">📋</span>
-                شروط و أحكام العقد
-            </div>
-            <div class="conditions-list">
-                <ol>
-                    <li>يمنع منعًا باتًا التصريح بأن السيارة مؤجرة أو مُستأجرة لأي جهة كانت.</li>
-                    <li>الحد الأقصى المسموح به هو <strong>400 كم</strong>، وكل كيلومتر إضافي بعد ذلك يُحسب بـ <strong>15 دج</strong> للكيلومتر الواحد.</li>
-                    <li><strong>هيكل السيارة (الكاروسري)</strong> يقع تحت مسؤولية المستأجر بالكامل. أي خدش أو ضرر في الهيكل الخارجي يتحمله المستأجر.</li>
-                    <li>أي أعطال ميكانيكية أو أضرار ناتجة عن <strong>سوء استخدام السائق</strong> (مثل: القيادة بسرعة مفرطة، عدم فحص الزيت أو الماء، القيادة على طرق غير معبدة) تكون على حساب المستأجر.</li>
-                    <li>المحرك وأجزاء السيارة الداخلية: الأعطال الطبيعية تكون على حساب المؤجر، أما الأعطال الناتجة عن الإهمال فتكون على حساب المستأجر.</li>
-                    <li>يجب إرجاع السيارة في نفس الحالة التي تم تسليمها بها، مع نفس مستوى الوقود.</li>
-                    <li>في حالة التأخر في إرجاع السيارة، يتم احتساب يوم إضافي كامل.</li>
-                    <li>يتم دفع مبلغ التأمين عند استلام السيارة ويُرد عند إرجاعها بحالة جيدة.</li>
-                    <li>يُمنع على المستأجر إعارة أو تأجير السيارة لطرف ثالث.</li>
-                    <li>في حالة وقوع حادث مرور، يتحمل المستأجر كامل المسؤولية القانونية والمادية.</li>
-                </ol>
-            </div>
-            
-            <!-- License Copy Note -->
-            <div class="license-note">
-                ⚠️ يجب تقديم نسخة من رخصة السياقة و بطاقة التعريف الوطنية عند توقيع العقد
-            </div>
+                    <div class="grid-2" style="margin-bottom: 6px;">
+                        <div class="field-group">
+                            <span class="field-label">الاسم واللقب الكامل</span>
+                            <div class="field-value">${customerName}</div>
+                        </div>
+                        <div class="field-group">
+                            <span class="field-label">رقم الهاتف</span>
+                            <div class="field-value" dir="ltr" style="text-align: right;">${customerPhone}</div>
+                        </div>
+                    </div>
 
-            <!-- Declaration -->
-            <div style="padding: 3mm 4mm; font-size: 12px; color: #2d3748; line-height: 2; margin-top: 2mm;">
-                أقر أنا الموقع أدناه، <strong>${customerName}</strong>، أنني قرأت وفهمت جميع شروط وأحكام هذا العقد وأوافق عليها بالكامل. وأتحمل كامل المسؤولية عن أي أضرار تلحق بالسيارة خلال فترة الإيجار.
-            </div>
-
-            <!-- Signatures -->
-            <div class="signatures">
-                <div class="signature-box">
-                    <div class="title">المؤجر</div>
-                    <div class="sign-area"></div>
-                    <div class="name">واحد أوتو - بازول، جيجل</div>
+                    <div class="grid-2">
+                        <div class="field-group">
+                            <span class="field-label">العنوان الشخصي / الإقامة</span>
+                            <div class="field-value">${customerAddress}</div>
+                        </div>
+                        <div class="field-group">
+                            <span class="field-label">رقم بطاقة التعريف / رخصة السياقة</span>
+                            <div class="field-value">${customerNationalId}</div>
+                        </div>
+                    </div>
                 </div>
-                <div class="signature-box">
-                    <div class="title">المستأجر</div>
-                    <div class="sign-area"></div>
-                    <div class="name">${customerName}</div>
+
+                <!-- Section 2: Vehicle Specs -->
+                <div class="section-box">
+                    <div class="section-header">
+                        <div class="section-title">
+                            <span class="icon">🚗</span>
+                            ثانياً: مواصفات المركبة المؤجرة
+                        </div>
+                    </div>
+
+                    <div class="grid-4" style="margin-bottom: 6px;">
+                        <div class="field-group">
+                            <span class="field-label">ماركة المركبة</span>
+                            <div class="field-value">${carMake}</div>
+                        </div>
+                        <div class="field-group">
+                            <span class="field-label">الموديل والطراز</span>
+                            <div class="field-value">${carModel}</div>
+                        </div>
+                        <div class="field-group">
+                            <span class="field-label">سنة الصنع</span>
+                            <div class="field-value">${carYear}</div>
+                        </div>
+                        <div class="field-group">
+                            <span class="field-label">اللون</span>
+                            <div class="field-value">${carColor}</div>
+                        </div>
+                    </div>
+
+                    <div class="grid-3">
+                        <div class="field-group">
+                            <span class="field-label">نوع الوقود / ناقل الحركة</span>
+                            <div class="field-value">${carFuel} / ${carTransmission}</div>
+                        </div>
+                        <div class="field-group">
+                            <span class="field-label">رقم الهيكل (VIN)</span>
+                            <div class="field-value" style="font-family: monospace; font-size: 11px;">${carVin}</div>
+                        </div>
+                        <div class="field-group">
+                            <span class="field-label">عداد الكيلومتر عند التسليم</span>
+                            <div class="field-value" style="color: #0284c7; font-weight: 900;">${mileageOut} كم</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 3: Rental Financials -->
+                <div class="section-box">
+                    <div class="section-header">
+                        <div class="section-title">
+                            <span class="icon">📅</span>
+                            ثالثاً: فترة الإيجار والشروط المالية
+                        </div>
+                    </div>
+
+                    <div class="grid-3" style="margin-bottom: 8px;">
+                        <div class="field-group">
+                            <span class="field-label">تاريخ ووقت الاستلام</span>
+                            <div class="field-value">${formatDate(startDate)} (${pickupTime})</div>
+                        </div>
+                        <div class="field-group">
+                            <span class="field-label">تاريخ الإرجاع المحدد</span>
+                            <div class="field-value">${formatDate(endDate)}</div>
+                        </div>
+                        <div class="field-group">
+                            <span class="field-label">مدة الإيجار الإجمالية</span>
+                            <div class="field-value" style="color: #2563eb;">${diffDays} أيام</div>
+                        </div>
+                    </div>
+
+                    <div class="financial-summary">
+                        <div class="fin-card">
+                            <div class="fin-label">سعر الإيجار اليومي</div>
+                            <div class="fin-value">${formatMoney(rental.daily_rate)}</div>
+                        </div>
+                        <div class="fin-card highlight">
+                            <div class="fin-label">المبلغ الإجمالي المستحق</div>
+                            <div class="fin-value">${formatMoney(totalCost)}</div>
+                        </div>
+                        <div class="fin-card primary">
+                            <div class="fin-label">الحد الأقصى للكيلومترات</div>
+                            <div class="fin-value" style="font-size: 16px;">400 كم / يوم</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 4: Visual Inspection Grid -->
+                <div class="section-box">
+                    <div class="section-header">
+                        <div class="section-title">
+                            <span class="icon">🔍</span>
+                            رابعاً: معاينة وتجهيزات المركبة عند التسليم
+                        </div>
+                    </div>
+
+                    <div class="checklist-grid">
+                        <div class="check-item">
+                            مستوى الوقود
+                            <span class="status">مملوء ⛽</span>
+                        </div>
+                        <div class="check-item">
+                            عجلة احتياطية
+                            <span class="status">موجودة ✔️</span>
+                        </div>
+                        <div class="check-item">
+                            رافعة ومفتاح
+                            <span class="status">موجودة ✔️</span>
+                        </div>
+                        <div class="check-item">
+                            وثائق السيارة
+                            <span class="status">كاملة 📁</span>
+                        </div>
+                        <div class="check-item">
+                            نظافة المركبة
+                            <span class="status">ممتازة ✨</span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <!-- Footer -->
-            <div class="footer">
-                تم تحرير هذا العقد بتاريخ ${formatDate(today)} في نسختين أصليتين، واحدة لكل طرف.
+            <!-- Page 1 Footer -->
+            <div class="page-footer">
+                <span>واحد أوتو لكراء السيارات - جيجل | هاتف: 0550000000</span>
+                <span>صفحة 1 من 2</span>
             </div>
         </div>
     </div>
+
+    <!-- ================= PAGE 2 ================= -->
+    <div class="page">
+        <div class="page-frame"></div>
+        <div class="page-frame-inner"></div>
+
+        <div class="content">
+            <div>
+                <!-- Header Banner Page 2 -->
+                <div class="header">
+                    <div class="brand-title">
+                        <div class="brand-logo">W</div>
+                        <div class="brand-text">
+                            <h1>واحد أوتو - WAHID AUTO</h1>
+                            <p>عقد إيجار سيارة - صفحة الشروط والأحكام والالتزامات 2/2</p>
+                        </div>
+                    </div>
+
+                    <div class="contract-meta">
+                        <div class="contract-badge">رقم العقد: ${contractId}</div>
+                    </div>
+                </div>
+
+                <!-- Section 5: Legal Terms & Conditions -->
+                <div class="section-box" style="margin-bottom: 8px;">
+                    <div class="section-header">
+                        <div class="section-title">
+                            <span class="icon">📋</span>
+                            خامساً: شروط وأحكام العقد والالتزامات القانونية
+                        </div>
+                    </div>
+
+                    <div class="conditions-container">
+                        <div class="condition-card alert">
+                            <div class="condition-num">1</div>
+                            <div class="condition-text">
+                                <strong>السرية وعدم التصريح الإيجاري:</strong> يمنع منعًا باتًا التصريح بأن السيارة مؤجرة أو مستأجرة أمام أي جهة كانت، وتعتبر المركبة مخصصة للاستعمال الشخصي الفردي فقط.
+                            </div>
+                        </div>
+
+                        <div class="condition-card alert">
+                            <div class="condition-num">2</div>
+                            <div class="condition-text">
+                                <strong>شرط الكيلومترات الإضافية:</strong> الحد الأقصى المسموح به هو <strong>400 كم</strong> لكل يوم إيجار. وكل كيلومتر إضافي بعد 400 كم يُحسب بـ <strong>15 دج</strong> للكيلومتر الواحد وتُدفع عند الإرجاع.
+                            </div>
+                        </div>
+
+                        <div class="condition-card alert">
+                            <div class="condition-num">3</div>
+                            <div class="condition-text">
+                                <strong>مسؤولية هيكل السيارة (الكاروسري):</strong> هيكل السيارة الخارجي يقع تحت **مسؤولية المستأجر بالكامل**. أي خدش، انبعاج، أضرار في الدهان، أو كسور في الزجاج والمرايا يتحمل المستأجر تكاليف إصلاحها كاملة.
+                            </div>
+                        </div>
+
+                        <div class="condition-card alert">
+                            <div class="condition-num">4</div>
+                            <div class="condition-text">
+                                <strong>الأعطال الميكانيكية وسوء استخدام السائق:</strong> المحرك والعلبة الميكانيكية مسؤولية المؤجر في حالة التلف الطبيعي. أما **الأعطال الناتجة عن سوء الاستخدام** (كالقيادة بدون زيت/ماء، السرعة المفرطة، أو السير في الطرق غير المعبدة) فتقع على المستأجر.
+                            </div>
+                        </div>
+
+                        <div class="condition-card">
+                            <div class="condition-num">5</div>
+                            <div class="condition-text">
+                                <strong>نسخة الوثائق الرسمية:</strong> يلتزم المستأجر بتقديم نسخة طبق الأصل من **رخصة السياقة الصالحة وبطاقة التعريف الوطنية**، والتي تبقى محفوظة في أرشيف المعرض طيلة مدة العقد.
+                            </div>
+                        </div>
+
+                        <div class="condition-card">
+                            <div class="condition-num">6</div>
+                            <div class="condition-text">
+                                <strong>الحوادث والمخالفات المرورية:</strong> يتحمل المستأجر المسئولية المادية والشخصية عن جميع المخالفات والغرامات المرورية المسجلة خلال فترة الإيجار، وكذا التكاليف الناتجة عن الحوادث المرورية.
+                            </div>
+                        </div>
+
+                        <div class="condition-card">
+                            <div class="condition-num">7</div>
+                            <div class="condition-text">
+                                <strong>مواعيد التأخير والإرجاع:</strong> يتعهد المستأجر بإعادة المركبة في الوقت والتاريخ المحددين. أي تأخير يتجاوز ساعتين دون إذن رسمي يُحسب كـ **يوم إيجار كامل إضافي**.
+                            </div>
+                        </div>
+
+                        <div class="condition-card">
+                            <div class="condition-num">8</div>
+                            <div class="condition-text">
+                                <strong>حظر إعادة التأجير أو الإعارة:</strong> يُحظر على المستأجر حظرًا قاطعًا تسليم السيارة لشخص ثالث أو إعادة تأجيرها أو استعمالها في أغراض تجارية غير قانونية.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 6: Customer Declaration -->
+                <div class="declaration-box">
+                    <strong>إقرار واعتراف المستأجر:</strong><br>
+                    أقر أنا الموقع أدناه المستأجر <strong>(${customerName})</strong> بأنني عاينت المركبة المذكورة أعلاه معاينة تامة ووجدتها بحالة ممتازة وصالحة للسير، وقرأت جميع شروط وأحكام هذا العقد المكون من صفحتين وأوافق عليها دون أي تحفظ، وأتحمل المسؤولية الكاملة عنها.
+                </div>
+
+                <!-- Section 7: Signatures & Stamp -->
+                <div class="signatures-grid">
+                    <div class="sig-box">
+                        <div class="sig-title">توقيع المستأجر (الطرف الثاني)</div>
+                        <div class="sig-space"></div>
+                        <div class="sig-name">${customerName}</div>
+                    </div>
+
+                    <div class="sig-box">
+                        <div class="sig-title">بصمة المستأجر (الإبهام الأيسر)</div>
+                        <div class="sig-space"></div>
+                        <div class="sig-name">البصمة الحية</div>
+                    </div>
+
+                    <div class="sig-box">
+                        <div class="sig-title">توقيع وختم المعرض (المؤجر)</div>
+                        <div class="sig-space"></div>
+                        <div class="sig-name">واحد أوتو - WAHID AUTO</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Page 2 Footer -->
+            <div class="page-footer">
+                <span>حرر بجيجل بتاريخ ${formatDate(today)} في نسختين أصليتين متطابقتين</span>
+                <span>صفحة 2 من 2</span>
+            </div>
+        </div>
+    </div>
+
 </body>
 </html>
     `;
