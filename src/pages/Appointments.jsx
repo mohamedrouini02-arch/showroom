@@ -98,15 +98,15 @@ export default function Appointments() {
         // Fetch active rentals for car
         const { data: rentals } = await supabase
             .from('rentals')
-            .select('id, car_id, start_date, end_date, status, cars(make, model)')
+            .select('*, cars(make, model)')
             .eq('car_id', carId)
             .eq('status', 'Active')
             .order('start_date', { ascending: true });
 
-        // Fetch scheduled appointments for car
+        // Fetch scheduled appointments for car (using select '*' to avoid 400 if end_date is missing)
         const { data: appointments } = await supabase
             .from('rental_appointments')
-            .select('id, car_id, appointment_date, end_date, appointment_time, status, customers(name)')
+            .select('*, customers(name)')
             .eq('car_id', carId)
             .eq('status', 'Scheduled')
             .order('appointment_date', { ascending: true });
@@ -181,7 +181,6 @@ export default function Appointments() {
         // Check active rentals
         const isRented = carSchedule.rentals.some(r => {
             if (r.status !== 'Active') return false;
-            // Overlap check: start1 <= end2 && end1 >= start2
             return startDateStr <= r.end_date && endStr >= r.start_date;
         });
 
@@ -235,7 +234,7 @@ export default function Appointments() {
                 finalCustomerId = newCustomer.id;
             }
 
-            const payload = {
+            const fullPayload = {
                 customer_id: finalCustomerId,
                 car_id: appointmentData.carId || null,
                 appointment_date: startDate,
@@ -245,12 +244,22 @@ export default function Appointments() {
                 notes: appointmentData.notes
             };
 
-            if (editingAppointment) {
-                const { error } = await supabase.from('rental_appointments').update(payload).eq('id', editingAppointment.id);
-                if (error) throw error;
-            } else {
-                const { error } = await supabase.from('rental_appointments').insert([payload]);
-                if (error) throw error;
+            // Attempt save with end_date
+            let res = editingAppointment 
+                ? await supabase.from('rental_appointments').update(fullPayload).eq('id', editingAppointment.id)
+                : await supabase.from('rental_appointments').insert([fullPayload]);
+
+            // If database table doesn't have end_date column yet (causes 400 error), fallback without end_date
+            if (res.error) {
+                console.warn('Retrying save without end_date column:', res.error);
+                const fallbackPayload = { ...fullPayload };
+                delete fallbackPayload.end_date;
+
+                res = editingAppointment 
+                    ? await supabase.from('rental_appointments').update(fallbackPayload).eq('id', editingAppointment.id)
+                    : await supabase.from('rental_appointments').insert([fallbackPayload]);
+
+                if (res.error) throw res.error;
             }
 
             setIsModalOpen(false);
@@ -259,7 +268,7 @@ export default function Appointments() {
             fetchDropdownData();
         } catch (error) {
             console.error('Error saving appointment:', error);
-            alert('Failed to save appointment.');
+            alert('Failed to save appointment. ' + (error.message || 'Please check database permissions.'));
         }
     };
 
