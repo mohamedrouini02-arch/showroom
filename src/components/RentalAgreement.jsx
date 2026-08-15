@@ -843,61 +843,54 @@ export function printRentalAgreement(rental, car, customer) {
                         <div class="condition-card alert">
                             <div class="condition-num">1</div>
                             <div class="condition-text">
-                                <strong>السرية وعدم التصريح الإيجاري:</strong> يمنع منعًا باتًا التصريح بأن السيارة مؤجرة أو مستأجرة أمام أي جهة رسمية أو غير رسمية، وتعتبر المركبة مخصصة للاستعمال الشخصي الفردي فقط.
+                                <strong>حصرية القيادة والإرجاع على المستأجر:</strong> يقتصر حق قيادة المركبة واستعمالها حصريًا على <strong>المستأجر (السائق المعتمد والموقع في هذا العقد) دون غيره</strong> ويُمنع منعًا باتًا قيادتها من طرف أي شخص آخر. كما يلتزم المستأجر نفسه بإرجاع المركبة وتسليمها شخصيًا للمعرض وقت الانتهاء.
                             </div>
                         </div>
 
                         <div class="condition-card alert">
                             <div class="condition-num">2</div>
                             <div class="condition-text">
-                                <strong>حصرية القيادة والإرجاع على المستأجر:</strong> يقتصر حق قيادة المركبة واستعمالها حصريًا على <strong>المستأجر (السائق المعتمد والموقع في هذا العقد) دون غيره</strong> ويُمنع منعًا باتًا قيادتها من طرف أي شخص آخر. كما يلتزم المستأجر نفسه بإرجاع المركبة وتسليمها شخصيًا للمعرض وقت الانتهاء.
+                                <strong>شرط الكيلومترات الإضافية:</strong> الحد الأقصى المسموح به هو <strong>400 كم</strong> لكل يوم إيجار. وكل كيلومتر إضافي بعد 400 كم يُحسب بـ <strong>15 دج</strong> للكيلومتر الواحد وتُدفع عند الإرجاع.
                             </div>
                         </div>
 
                         <div class="condition-card alert">
                             <div class="condition-num">3</div>
                             <div class="condition-text">
-                                <strong>شرط الكيلومترات الإضافية:</strong> الحد الأقصى المسموح به هو <strong>400 كم</strong> لكل يوم إيجار. وكل كيلومتر إضافي بعد 400 كم يُحسب بـ <strong>15 دج</strong> للكيلومتر الواحد وتُدفع عند الإرجاع.
+                                <strong>مسؤولية هيكل السيارة (الكاروسري):</strong> هيكل السيارة الخارجي يقع تحت <strong>مسؤولية المستأجر بالكامل</strong>. أي خدش، انبعاج، أضرار في الدهان، أو كسور في الزجاج والمرايا يتحمل المستأجر تكاليف إصلاحها كاملة.
                             </div>
                         </div>
 
                         <div class="condition-card alert">
                             <div class="condition-num">4</div>
                             <div class="condition-text">
-                                <strong>مسؤولية هيكل السيارة (الكاروسري):</strong> هيكل السيارة الخارجي يقع تحت <strong>مسؤولية المستأجر بالكامل</strong>. أي خدش، انبعاج، أضرار في الدهان، أو كسور في الزجاج والمرايا يتحمل المستأجر تكاليف إصلاحها كاملة.
-                            </div>
-                        </div>
-
-                        <div class="condition-card alert">
-                            <div class="condition-num">5</div>
-                            <div class="condition-text">
                                 <strong>الأعطال الميكانيكية وسوء استخدام السائق:</strong> المحرك والعلبة الميكانيكية مسؤولية المؤجر في حالة التلف الطبيعي. أما <strong>الأعطال الناتجة عن سوء الاستخدام</strong> (كالقيادة بدون زيت/ماء، السرعة المفرطة، أو السير في الطرق غير المعبدة) فتقع على المستأجر.
                             </div>
                         </div>
 
                         <div class="condition-card">
-                            <div class="condition-num">6</div>
+                            <div class="condition-num">5</div>
                             <div class="condition-text">
                                 <strong>نسخة الوثائق الرسمية:</strong> يلتزم المستأجر بتقديم نسخة طبق الأصل من <strong>رخصة السياقة الصالحة وبطاقة التعريف الوطنية</strong>، والتي تبقى محفوظة في أرشيف المعرض طيلة مدة العقد.
                             </div>
                         </div>
 
                         <div class="condition-card">
-                            <div class="condition-num">7</div>
+                            <div class="condition-num">6</div>
                             <div class="condition-text">
                                 <strong>الحوادث والمخالفات المرورية:</strong> يتحمل المستأجر المسئولية المادية والشخصية عن جميع المخالفات والغرامات المرورية المسجلة خلال فترة الإيجار، وكذا التكاليف الناتجة عن الحوادث المرورية.
                             </div>
                         </div>
 
                         <div class="condition-card">
-                            <div class="condition-num">8</div>
+                            <div class="condition-num">7</div>
                             <div class="condition-text">
                                 <strong>مواعيد التأخير والإرجاع:</strong> يتعهد المستأجر بإعادة المركبة في الوقت والتاريخ المحددين. أي تأخير يتجاوز ساعتين دون إذن رسمي يُحسب كـ <strong>يوم إيجار كامل إضافي</strong>.
                             </div>
                         </div>
 
                         <div class="condition-card">
-                            <div class="condition-num">9</div>
+                            <div class="condition-num">8</div>
                             <div class="condition-text">
                                 <strong>حظر إعادة التأجير أو الإعارة:</strong> يُحظر على المستأجر حظرًا قاطعًا تسليم السيارة لشخص ثالث أو إعادة تأجيرها أو استعمالها في أغراض تجارية غير قانونية.
                             </div>
