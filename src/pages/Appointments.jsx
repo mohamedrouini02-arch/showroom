@@ -343,12 +343,14 @@ export default function Appointments() {
                             </div>
 
                             <p className="text-xs text-slate-400">
-                                🟢 <strong className="text-emerald-400">Green</strong> = Available &nbsp;|&nbsp; 
-                                🔴 <strong className="text-red-400">Red</strong> = Rented / Booked Range (Disabled)
+                                🔴 <strong className="text-red-400">Red</strong> = 100% Fully Booked &nbsp;|&nbsp; 
+                                🟠 <strong className="text-amber-400">Orange</strong> = 1+ Vehicle Available &nbsp;|&nbsp; 
+                                🟢 <strong className="text-emerald-400">Green</strong> = All Free
                             </p>
                         </div>
 
                         <AvailabilityCalendar
+                            cars={allCars}
                             selectedCarId={filterCarId}
                             carName={allCars.find(c => c.id === filterCarId) ? `${allCars.find(c => c.id === filterCarId).year} ${allCars.find(c => c.id === filterCarId).make} ${allCars.find(c => c.id === filterCarId).model}` : 'All Cars'}
                             rentals={allRentals}
