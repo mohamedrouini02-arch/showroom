@@ -745,7 +745,7 @@ export function printRentalAgreement(rental, car, customer) {
                         </div>
                         <div class="fin-card primary">
                             <div class="fin-label">الحد المسموح للكيلومترات</div>
-                            <div class="fin-value" style="font-size: 15px;">400 كم / يوم</div>
+                            <div class="fin-value" style="font-size: 15px;">300 كم / يوم</div>
                         </div>
                     </div>
                 </div>
@@ -850,7 +850,7 @@ export function printRentalAgreement(rental, car, customer) {
                         <div class="condition-card alert">
                             <div class="condition-num">2</div>
                             <div class="condition-text">
-                                <strong>شرط الكيلومترات الإضافية:</strong> الحد الأقصى المسموح به هو <strong>400 كم</strong> لكل يوم إيجار. وكل كيلومتر إضافي بعد 400 كم يُحسب بـ <strong>15 دج</strong> للكيلومتر الواحد وتُدفع عند الإرجاع.
+                                <strong>شرط الكيلومترات الإضافية:</strong> الحد الأقصى المسموح به هو <strong>300 كم</strong> لكل يوم إيجار. وكل كيلومتر إضافي بعد 300 كم يُحسب بـ <strong>15 دج</strong> للكيلومتر الواحد وتُدفع عند الإرجاع.
                             </div>
                         </div>
 

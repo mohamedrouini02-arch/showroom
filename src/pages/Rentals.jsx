@@ -322,7 +322,7 @@ export default function Rentals() {
         const start = new Date(rentalToReturn.start_date);
         const end = new Date(rentalToReturn.end_date);
         const days = Math.max(1, Math.ceil(Math.abs(end - start) / (1000 * 60 * 60 * 24)));
-        const allowedKM = days * 400; // 400 KM per day limit
+        const allowedKM = days * 300; // 300 KM per day limit
         
         const startKM = Number(rentalToReturn.mileage_out || rentalToReturn.cars?.mileage || 0);
         const endKM = Number(returnMileage);
@@ -558,7 +558,7 @@ export default function Rentals() {
                                             <div className="mt-3 p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-between">
                                                 <div>
                                                     <div className="text-xs text-slate-300 font-semibold">{calcDays} Rental Days × {formatMoney(rentData.dailyRate)} / day</div>
-                                                    <div className="text-[11px] text-slate-400">Includes 400 KM per day limit</div>
+                                                    <div className="text-[11px] text-slate-400">Includes 300 KM per day limit</div>
                                                 </div>
                                                 <div className="text-lg font-black text-emerald-400">
                                                     {formatMoney(calcTotal)}
@@ -648,7 +648,7 @@ export default function Rentals() {
                                                     <span className="font-semibold text-white">{calc.driven.toLocaleString()} KM</span>
                                                 </div>
                                                 <div className="flex justify-between text-slate-400">
-                                                    <span>Allowed Distance (400 KM/day):</span>
+                                                    <span>Allowed Distance (300 KM/day):</span>
                                                     <span className="font-semibold text-white">{calc.allowed.toLocaleString()} KM</span>
                                                 </div>
                                                 {calc.excess > 0 ? (
@@ -658,7 +658,7 @@ export default function Rentals() {
                                                     </div>
                                                 ) : (
                                                     <div className="pt-2 border-t border-slate-800 text-emerald-400 font-semibold">
-                                                        ✓ Distance driven is within the 400 KM/day limit (No extra charge).
+                                                        ✓ Distance driven is within the 300 KM/day limit (No extra charge).
                                                     </div>
                                                 )}
                                             </>
